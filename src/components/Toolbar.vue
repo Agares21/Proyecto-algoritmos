@@ -22,6 +22,15 @@
       >
         🔗 Arista
       </button>
+
+      <button
+        @click="setMode('delete')"
+        :class="{ active: currentMode === 'delete' }"
+        title="Clic en nodo/arista para borrar"
+        style="color: #dc3545"
+      >
+        🧽 Borrador
+      </button>
     </div>
 
     <div class="separator"></div>
@@ -41,18 +50,33 @@
 
     <button @click="clearGraph" class="danger">🗑 Borrar Todo</button>
   </div>
+
+  <button
+    @click="toggleMatrixPanel"
+    :class="{ active: showMatrixPanel }"
+    style="
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+      margin-left: 10px;
+    "
+  >
+    🧮 Matriz
+  </button>
 </template>
 
 <script setup>
 import { useGraph } from "../composables/useGraph";
 
 const {
-  currentMode,
   setMode,
+  currentMode,
   clearGraph,
-  edgeStep,
   isDirected,
   toggleDirected,
+  edgeStep,
+  toggleMatrixPanel,
+  showMatrixPanel,
 } = useGraph();
 </script>
 <style scoped>
