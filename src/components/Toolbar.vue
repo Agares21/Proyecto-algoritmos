@@ -6,7 +6,7 @@
         :class="{ active: currentMode === 'move' }"
         title="Mover nodos"
       >
-        🖐 Mover
+        🖐 Mover y Editar
       </button>
       <button
         @click="setMode('node')"
@@ -27,7 +27,7 @@
         @click="setMode('delete')"
         :class="{ active: currentMode === 'delete' }"
         title="Clic en nodo/arista para borrar"
-        style="color: #dc3545"
+        class="borrador"
       >
         🧽 Borrador
       </button>
@@ -42,27 +42,37 @@
       </label>
     </div>
 
-    <div class="separator"></div>
-
     <span class="status" v-if="currentMode === 'edge'">
       👉 {{ edgeStep }}
     </span>
 
-    <button @click="clearGraph" class="danger">🗑 Borrar Todo</button>
-  </div>
+    <div class="group right-actions">
+      <button
+        @click="toggleMatrixPanel"
+        :class="{ 'matriz-active': showMatrixPanel }"
+        class="btn-matriz"
+      >
+        🧮 Matriz
+      </button>
 
-  <button
-    @click="toggleMatrixPanel"
-    :class="{ active: showMatrixPanel }"
-    style="
-      background: #10b981;
-      color: white;
-      border-color: #10b981;
-      margin-left: 10px;
-    "
-  >
-    🧮 Matriz
-  </button>
+      <button @click="exportGraph" class="btn-exportar">💾 Exportar</button>
+
+      <input
+        type="file"
+        id="import-file"
+        accept=".json"
+        style="display: none"
+        @change="importGraph"
+      />
+      <label for="import-file" class="btn-importar base-btn">
+        📂 Importar
+      </label>
+
+      <div class="separator hide-mobile"></div>
+
+      <button @click="clearGraph" class="danger">🗑 Borrar Todo</button>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -77,8 +87,11 @@ const {
   edgeStep,
   toggleMatrixPanel,
   showMatrixPanel,
+  exportGraph,
+  importGraph,
 } = useGraph();
 </script>
+
 <style scoped>
 /* --- ESTILOS ORIGINALES (ESCRITORIO) --- */
 .toolbar {
@@ -86,7 +99,7 @@ const {
   background: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
   display: flex;
-  flex-wrap: wrap; /* ¡Magia 1! Permite que los elementos bajen de línea */
+  flex-wrap: wrap;
   gap: 15px;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -95,10 +108,18 @@ const {
 .group {
   display: flex;
   gap: 5px;
-  flex-wrap: wrap; /* Permite que los botones del grupo también salten si es muy angosto */
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-button {
+/* El grupo derecho empuja todo hacia la derecha */
+.right-actions {
+  margin-left: auto;
+}
+
+/* Todos los botones comparten esta base */
+button,
+.base-btn {
   padding: 8px 16px;
   border: 1px solid #ced4da;
   background: white;
@@ -106,9 +127,14 @@ button {
   cursor: pointer;
   transition: all 0.2s;
   font-weight: 500;
+  display: inline-block;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #212529;
 }
 
-button:hover {
+button:hover,
+.base-btn:hover {
   background: #e9ecef;
 }
 
@@ -116,6 +142,10 @@ button.active {
   background: #0d6efd;
   color: white;
   border-color: #0d6efd;
+}
+
+.borrador {
+  color: #dc3545;
 }
 
 .checkbox-label {
@@ -131,8 +161,36 @@ button.active {
   color: #d63384;
 }
 
+/* --- COLORES PERSONALIZADOS PARA NUEVOS BOTONES --- */
+.btn-matriz {
+  border-color: #10b981;
+  color: #10b981;
+}
+.btn-matriz.matriz-active,
+.btn-matriz:hover {
+  background: #10b981;
+  color: white;
+}
+
+.btn-exportar {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.btn-exportar:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-importar {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.btn-importar:hover {
+  background: #f59e0b;
+  color: white;
+}
+
 .danger {
-  margin-left: auto;
   background: #dc3545;
   color: white;
   border: none;
@@ -150,24 +208,32 @@ button.active {
 /* --- ESTILOS PARA CELULARES --- */
 @media (max-width: 768px) {
   .toolbar {
-    justify-content: center; /* Centramos todo */
+    justify-content: center;
     padding: 10px;
     gap: 10px;
   }
 
   .group {
     justify-content: center;
-    width: 100%; /* Forzamos a que el grupo de botones tome todo el ancho */
+    width: 100%;
+  }
+
+  .right-actions {
+    margin-left: 0; /* Quitamos el empuje a la derecha en móviles */
   }
 
   .separator {
-    display: none; /* Ocultamos las rayitas grises en celular porque se ven mal al bajar de línea */
+    display: none;
+  }
+  .hide-mobile {
+    display: none;
   }
 
-  .danger {
-    margin-left: 0; /* Quitamos el margen automático */
-    width: 100%; /* Hacemos el botón de borrar de todo el ancho (más fácil de tocar) */
-    padding: 12px; /* Un poco más alto para los dedos */
+  .danger,
+  .base-btn,
+  button {
+    flex-grow: 1; /* Los botones se estiran para ser más fáciles de tocar */
+    text-align: center;
   }
 
   .options {

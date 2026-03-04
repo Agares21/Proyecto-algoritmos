@@ -66,6 +66,7 @@ const {
   deleteEdge,
   showMatrixPanel,
   matrixData,
+  updateNodeLabel, // <-- ESTO DEBE ESTAR AQUÍ
 } = useGraph();
 
 let network = null;
@@ -112,12 +113,17 @@ onMounted(() => {
     window.addEventListener("keydown", handleKeyDown);
 
     network.on("doubleClick", (params) => {
+      // ¡RECUERDA! Solo funciona si tienes la flechita (Mover) seleccionada
       if (currentMode.value === "move") {
+        const clickedNodeId = params.nodes.length > 0 ? params.nodes[0] : null;
         const clickedEdgeId =
-          params.edges.length > 0 && params.nodes.length === 0
-            ? params.edges[0]
-            : null;
-        if (clickedEdgeId) updateEdgeWeight(clickedEdgeId);
+          params.edges.length > 0 && !clickedNodeId ? params.edges[0] : null;
+
+        if (clickedNodeId) {
+          updateNodeLabel(clickedNodeId);
+        } else if (clickedEdgeId) {
+          updateEdgeWeight(clickedEdgeId);
+        }
       }
     });
 

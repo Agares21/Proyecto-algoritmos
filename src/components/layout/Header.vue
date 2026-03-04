@@ -14,7 +14,7 @@ import { RouterLink } from "vue-router";
     <nav>
       <RouterLink to="/" class="nav-link">Inicio</RouterLink>
       <RouterLink to="/algoritmo" class="nav-link">Algoritmo</RouterLink>
-      <RouterLink to="editor" class="nav-link">Crea tu Grafo</RouterLink>
+      <RouterLink to="/editor" class="nav-link">Crea tu Grafo</RouterLink>
       <RouterLink to="/acerca" class="nav-link">Acerca de</RouterLink>
     </nav>
   </header>

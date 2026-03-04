@@ -122,6 +122,19 @@ export function useGraph() {
     if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
   };
 
+  // --- FUNCIÓN AÑADIDA: EDITAR NOMBRE DE NODO ---
+  const updateNodeLabel = (nodeId) => {
+    const node = nodes.get(nodeId);
+    if (!node) return;
+    let newLabel = window.prompt("Modifica el nombre del nodo:", node.label);
+
+    if (newLabel === null || newLabel.trim() === "") return;
+
+    nodes.update({ id: nodeId, label: newLabel.trim() });
+
+    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+  };
+
   const deleteNode = (nodeId) => {
     const connectedEdges = edges
       .get()
@@ -154,6 +167,65 @@ export function useGraph() {
     if (showMatrixPanel.value) updateMatrix(); // Limpia la matriz
   };
 
+  // --- NUEVA FUNCIÓN: EXPORTAR GRAFO ---
+  const exportGraph = () => {
+    // 1. Empaquetamos todo lo que importa en un objeto
+    const data = {
+      nodes: nodes.get(),
+      edges: edges.get(),
+      isDirected: isDirected.value,
+    };
+
+    // 2. Lo convertimos a un archivo de texto JSON
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(data));
+
+    // 3. Forzamos la descarga en el navegador
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mi_grafo.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  // --- NUEVA FUNCIÓN: IMPORTAR GRAFO ---
+  const importGraph = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        // 1. Leemos el archivo JSON
+        const data = JSON.parse(e.target.result);
+
+        // 2. Limpiamos el lienzo actual
+        nodes.clear();
+        edges.clear();
+
+        // 3. Restauramos la configuración y los datos
+        if (data.isDirected !== undefined) isDirected.value = data.isDirected;
+        if (data.nodes) nodes.add(data.nodes);
+        if (data.edges) edges.add(data.edges);
+
+        // 4. Actualizamos la matriz si el panel está abierto
+        if (showMatrixPanel.value) updateMatrix();
+
+        alert("✅ Grafo importado con éxito");
+      } catch (error) {
+        alert(
+          "❌ Error al leer el archivo. Asegúrate de que sea un archivo .json válido.",
+        );
+      }
+    };
+    reader.readAsText(file);
+
+    // Reseteamos el input para que puedas volver a importar el mismo archivo si quieres
+    event.target.value = null;
+  };
+
   return {
     nodes,
     edges,
@@ -162,16 +234,19 @@ export function useGraph() {
     sourceNode,
     isDirected,
     showMatrixPanel,
-    matrixData, // EXPORTAMOS LA MATRIZ Y SU ESTADO
+    matrixData,
     setMode,
     addNode,
     setSourceNode,
     connectNodes,
     updateEdgeWeight,
+    updateNodeLabel,
     deleteNode,
     deleteEdge,
     toggleDirected,
     clearGraph,
     toggleMatrixPanel,
+    exportGraph, // <--- AÑADE ESTO AQUÍ
+    importGraph, // <--- AÑADE ESTO AQUÍ
   };
 }
