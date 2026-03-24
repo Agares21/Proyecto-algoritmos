@@ -1,0 +1,233 @@
+import { ref } from "vue";
+import { DataSet } from "vis-data";
+
+// --- ESTADO GLOBAL ---
+const nodes = new DataSet([]);
+const edges = new DataSet([]);
+const currentMode = ref("move");
+const edgeStep = ref("Inactivo");
+const sourceNode = ref(null);
+
+// --- ESTADO DE LA MATRIZ ---
+const showMatrixPanel = ref(false);
+const matrixData = ref({ labels: [], matrix: [] });
+
+export function useGraph() {
+  // Función para calcular y actualizar la matriz
+  const updateMatrix = () => {
+    const allNodes = nodes.get().sort((a, b) => a.id - b.id);
+    const allEdges = edges.get();
+    const n = allNodes.length;
+    const labels = allNodes.map((node) => node.label);
+
+    const idToIndex = {};
+    allNodes.forEach((node, index) => {
+      idToIndex[node.id] = index;
+    });
+
+    const matrix = Array(n)
+      .fill(null)
+      .map(() => Array(n).fill(0));
+
+    allEdges.forEach((edge) => {
+      const fromIdx = idToIndex[edge.from];
+      const toIdx = idToIndex[edge.to];
+      const weight = parseFloat(edge.label);
+
+      if (fromIdx !== undefined && toIdx !== undefined) {
+        matrix[fromIdx][toIdx] = weight;
+      }
+    });
+
+    matrixData.value = { labels, matrix };
+  };
+
+  // Mostrar/Ocultar el panel de matriz
+  const toggleMatrixPanel = () => {
+    showMatrixPanel.value = !showMatrixPanel.value;
+    if (showMatrixPanel.value) {
+      updateMatrix();
+    }
+  };
+
+  const setMode = (mode) => {
+    currentMode.value = mode;
+    sourceNode.value = null;
+    edgeStep.value = mode === "edge" ? "Selecciona Origen" : "Inactivo";
+    nodes.forEach((node) => nodes.update({ id: node.id, color: null }));
+  };
+
+  const getLetterLabel = (num) => {
+    let label = "";
+    let temp = num;
+    while (temp > 0) {
+      let rem = (temp - 1) % 26;
+      label = String.fromCharCode(65 + rem) + label;
+      temp = Math.floor((temp - 1) / 26);
+    }
+    return label;
+  };
+
+  const addNode = (x, y) => {
+    const allIds = nodes.getIds();
+    const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
+    nodes.add({ id: newId, label: getLetterLabel(newId), x, y });
+
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const setSourceNode = (nodeId) => {
+    sourceNode.value = nodeId;
+    edgeStep.value = "Selecciona Destino";
+    nodes.update({
+      id: nodeId,
+      color: { background: "#FFD700", border: "#FFA500" },
+    });
+  };
+
+  const connectNodes = (targetId, weight) => {
+    if (sourceNode.value !== null) {
+      edges.add({
+        from: sourceNode.value,
+        to: targetId,
+        label: String(weight),
+        arrows: "to",
+        font: { align: "top", size: 14, color: "#333333", background: "white" },
+      });
+      nodes.update({ id: sourceNode.value, color: null });
+      sourceNode.value = null;
+      edgeStep.value = "Selecciona Origen";
+
+      if (showMatrixPanel.value) updateMatrix();
+    }
+  };
+
+  const updateEdgeWeight = (edgeId) => {
+    const edge = edges.get(edgeId);
+    if (!edge) return;
+    let newWeight = window.prompt(
+      "Modifica el peso de la arista (SOLO NÚMEROS):",
+      edge.label,
+    );
+    if (newWeight === null) return;
+    while (isNaN(newWeight) || newWeight.trim() === "") {
+      newWeight = window.prompt(
+        "❌ Valor inválido. Ingresa SOLO NÚMEROS:",
+        edge.label,
+      );
+      if (newWeight === null) return;
+    }
+    edges.update({ id: edgeId, label: String(newWeight) });
+
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const updateNodeLabel = (nodeId) => {
+    const node = nodes.get(nodeId);
+    if (!node) return;
+    let newLabel = window.prompt("Modifica el nombre del nodo:", node.label);
+
+    if (newLabel === null || newLabel.trim() === "") return;
+
+    nodes.update({ id: nodeId, label: newLabel.trim() });
+
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const deleteNode = (nodeId) => {
+    const connectedEdges = edges
+      .get()
+      .filter((e) => e.from === nodeId || e.to === nodeId);
+    edges.remove(connectedEdges.map((e) => e.id));
+    nodes.remove(nodeId);
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const deleteEdge = (edgeId) => {
+    edges.remove(edgeId);
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const clearGraph = () => {
+    nodes.clear();
+    edges.clear();
+    setMode("move");
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const exportGraph = () => {
+    const data = {
+      nodes: nodes.get(),
+      edges: edges.get(),
+      isDirected: true,
+    };
+
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(data));
+
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mi_grafo.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const importGraph = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+
+        nodes.clear();
+        edges.clear();
+
+        if (data.nodes) nodes.add(data.nodes);
+        if (data.edges) {
+          const edgesWithArrows = data.edges.map(edge => ({
+            ...edge,
+            arrows: "to"
+          }));
+          edges.add(edgesWithArrows);
+        }
+
+        if (showMatrixPanel.value) updateMatrix();
+
+        alert("✅ Grafo importado con éxito");
+      } catch (error) {
+        alert(
+          "❌ Error al leer el archivo. Asegúrate de que sea un archivo .json válido.",
+        );
+      }
+    };
+    reader.readAsText(file);
+
+    event.target.value = null;
+  };
+
+  return {
+    nodes,
+    edges,
+    currentMode,
+    edgeStep,
+    sourceNode,
+    showMatrixPanel,
+    matrixData,
+    setMode,
+    addNode,
+    setSourceNode,
+    connectNodes,
+    updateEdgeWeight,
+    updateNodeLabel,
+    deleteNode,
+    deleteEdge,
+    clearGraph,
+    toggleMatrixPanel,
+    exportGraph,
+    importGraph,
+  };
+}
