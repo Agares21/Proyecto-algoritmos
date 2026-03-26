@@ -12,6 +12,44 @@ const isDirected = ref(false);
 // --- NUEVO: ESTADO DE LA MATRIZ ---
 const showMatrixPanel = ref(false);
 const matrixData = ref({ labels: [], matrix: [] });
+const getArrowsConfig = (directed) =>
+  directed ? "to" : { to: { enabled: false } };
+
+const normalizeUndirectedEdges = () => {
+  const allEdges = edges.get();
+  const seenPairs = new Map();
+  const edgesToRemove = [];
+  const edgesToUpdate = [];
+
+  allEdges.forEach((edge) => {
+    const a = Number(edge.from);
+    const b = Number(edge.to);
+    const pairKey = a <= b ? `${a}-${b}` : `${b}-${a}`;
+
+    if (!seenPairs.has(pairKey)) {
+      seenPairs.set(pairKey, edge.id);
+      return;
+    }
+
+    edgesToRemove.push(edge.id);
+  });
+
+  seenPairs.forEach((edgeId) => {
+    edgesToUpdate.push({ id: edgeId, arrows: getArrowsConfig(false) });
+  });
+
+  if (edgesToRemove.length > 0) edges.remove(edgesToRemove);
+  if (edgesToUpdate.length > 0) edges.update(edgesToUpdate);
+};
+
+const findEdgeBetweenNodes = (nodeA, nodeB) =>
+  edges
+    .get()
+    .find(
+      (edge) =>
+        (edge.from === nodeA && edge.to === nodeB) ||
+        (edge.from === nodeB && edge.to === nodeA),
+    );
 
 export function useGraph() {
   // Función para calcular y actualizar la matriz al instante
@@ -71,7 +109,15 @@ export function useGraph() {
   const addNode = (x, y) => {
     const allIds = nodes.getIds();
     const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-    nodes.add({ id: newId, label: getLetterLabel(newId), x, y });
+    const defaultLabel = getLetterLabel(newId);
+    const inputLabel = window.prompt(
+      "Ingresa el nombre del nodo:",
+      defaultLabel,
+    );
+    if (inputLabel === null) return;
+
+    const finalLabel = inputLabel.trim() || defaultLabel;
+    nodes.add({ id: newId, label: finalLabel, x, y });
 
     if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
   };
@@ -87,11 +133,27 @@ export function useGraph() {
 
   const connectNodes = (targetId, weight) => {
     if (sourceNode.value !== null) {
+      if (!isDirected.value) {
+        const existingEdge = findEdgeBetweenNodes(sourceNode.value, targetId);
+        if (existingEdge) {
+          edges.update({
+            id: existingEdge.id,
+            label: String(weight),
+            arrows: getArrowsConfig(false),
+          });
+          nodes.update({ id: sourceNode.value, color: null });
+          sourceNode.value = null;
+          edgeStep.value = "Selecciona Origen";
+          if (showMatrixPanel.value) updateMatrix();
+          return;
+        }
+      }
+
       edges.add({
         from: sourceNode.value,
         to: targetId,
         label: String(weight),
-        arrows: isDirected.value ? "to" : undefined,
+        arrows: getArrowsConfig(isDirected.value),
         font: { align: "top", size: 14, color: "#333333", background: "white" },
       });
       nodes.update({ id: sourceNode.value, color: null });
@@ -151,12 +213,16 @@ export function useGraph() {
 
   const toggleDirected = () => {
     isDirected.value = !isDirected.value;
-    const allEdges = edges.get();
-    const updates = allEdges.map((edge) => ({
-      id: edge.id,
-      arrows: isDirected.value ? "to" : undefined,
-    }));
-    edges.update(updates);
+    if (!isDirected.value) {
+      normalizeUndirectedEdges();
+    } else {
+      const allEdges = edges.get();
+      const updates = allEdges.map((edge) => ({
+        id: edge.id,
+        arrows: getArrowsConfig(true),
+      }));
+      edges.update(updates);
+    }
     if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
   };
 
@@ -168,26 +234,61 @@ export function useGraph() {
   };
 
   // --- NUEVA FUNCIÓN: EXPORTAR GRAFO ---
-  const exportGraph = () => {
-    // 1. Empaquetamos todo lo que importa en un objeto
+  const exportGraph = async () => {
     const data = {
       nodes: nodes.get(),
       edges: edges.get(),
       isDirected: isDirected.value,
     };
+    const defaultName = "mi_grafo";
+    const fileNameInput = window.prompt(
+      "Nombre del archivo (sin extension):",
+      defaultName,
+    );
+    if (fileNameInput === null) return;
 
-    // 2. Lo convertimos a un archivo de texto JSON
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(data));
+    const safeBaseName = (fileNameInput.trim() || defaultName).replace(
+      /[\\/:*?"<>|]/g,
+      "_",
+    );
+    const finalFileName = safeBaseName.endsWith(".json")
+      ? safeBaseName
+      : `${safeBaseName}.json`;
+    const jsonData = JSON.stringify(data, null, 2);
 
-    // 3. Forzamos la descarga en el navegador
+    try {
+      if ("showSaveFilePicker" in window) {
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: finalFileName,
+          types: [
+            {
+              description: "Archivo JSON",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(jsonData);
+        await writable.close();
+        alert(`✅ Grafo exportado como ${fileHandle.name}`);
+        return;
+      }
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement("a");
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "mi_grafo.json");
+    downloadAnchorNode.setAttribute("href", url);
+    downloadAnchorNode.setAttribute("download", finalFileName);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+    URL.revokeObjectURL(url);
+    alert(
+      "⚠️ Tu navegador descargó el archivo en la carpeta de descargas por defecto.",
+    );
   };
 
   // --- NUEVA FUNCIÓN: IMPORTAR GRAFO ---
@@ -209,6 +310,16 @@ export function useGraph() {
         if (data.isDirected !== undefined) isDirected.value = data.isDirected;
         if (data.nodes) nodes.add(data.nodes);
         if (data.edges) edges.add(data.edges);
+        // Fuerza consistencia visual de flechas segun modo dirigido/no dirigido.
+        const importedEdges = edges.get();
+        if (importedEdges.length > 0) {
+          edges.update(
+            importedEdges.map((edge) => ({
+              id: edge.id,
+              arrows: getArrowsConfig(isDirected.value),
+            })),
+          );
+        }
 
         // 4. Actualizamos la matriz si el panel está abierto
         if (showMatrixPanel.value) updateMatrix();

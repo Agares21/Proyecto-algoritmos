@@ -17,6 +17,8 @@
               <th v-for="label in matrixData.labels" :key="'col-' + label">
                 {{ label }}
               </th>
+              <th class="sum-header">Suma fila</th>
+              <th class="sum-header">Ocupados fila</th>
             </tr>
           </thead>
           <tbody>
@@ -34,20 +36,66 @@
               >
                 {{ col }}
               </td>
+              <td class="sum-cell">
+                {{ sumasPorFila[rowIndex] }}
+              </td>
+              <td class="sum-cell">
+                {{ ocupadosPorFila[rowIndex] }}
+              </td>
+            </tr>
+            <tr v-if="totalFilas > 0" class="sum-row">
+              <td class="row-header">
+                <strong>Suma col</strong>
+              </td>
+              <td
+                v-for="(suma, colIndex) in sumasPorColumna"
+                :key="'sum-col-' + colIndex"
+                class="sum-cell"
+              >
+                {{ suma }}
+              </td>
+              <td class="sum-cell total-cell">
+                {{ sumaTotalMatriz }}
+              </td>
+              <td class="sum-cell total-cell">
+                {{ totalOcupados }}
+              </td>
+            </tr>
+            <tr v-if="totalFilas > 0" class="sum-row">
+              <td class="row-header">
+                <strong>Ocupados col</strong>
+              </td>
+              <td
+                v-for="(ocupados, colIndex) in ocupadosPorColumna"
+                :key="'ocup-col-' + colIndex"
+                class="sum-cell"
+              >
+                {{ ocupados }}
+              </td>
+              <td class="sum-cell total-cell">
+                {{ totalOcupados }}
+              </td>
+              <td class="sum-cell total-cell">
+                {{ totalOcupados }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <p class="panel-info">
-        💡 Dibuja, borra o edita nodos y verás la matriz cambiar en vivo.
+        Filas: <strong>{{ totalFilas }}</strong> | Columnas:
+        <strong>{{ totalColumnas }}</strong>
+      </p>
+      <p class="panel-info convergencia-info" v-if="resumenConvergencia.length > 0">
+        Convergencia: <strong>{{ resumenConvergencia.join(" | ") }}</strong>
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
 import { Network } from "vis-network";
 import { useGraph } from "../composables/useGraph";
 
@@ -66,18 +114,88 @@ const {
   deleteEdge,
   showMatrixPanel,
   matrixData,
-  updateNodeLabel, // <-- ESTO DEBE ESTAR AQUÍ
+  updateNodeLabel,
 } = useGraph();
 
 let network = null;
 
-// CORRECCIÓN 1: Quitamos el "bold: true" que rompía el dibujo del nodo
+const totalFilas = computed(() => matrixData.value.matrix.length);
+const totalColumnas = computed(() => matrixData.value.labels.length);
+
+const sumasPorFila = computed(() =>
+  matrixData.value.matrix.map((row) =>
+    row.reduce((acc, val) => acc + (Number(val) || 0), 0),
+  ),
+);
+
+const sumasPorColumna = computed(() => {
+  const filas = matrixData.value.matrix;
+  const columnas = totalColumnas.value;
+  const result = Array(columnas).fill(0);
+
+  for (let i = 0; i < filas.length; i += 1) {
+    for (let j = 0; j < columnas; j += 1) {
+      result[j] += Number(filas[i][j]) || 0;
+    }
+  }
+
+  return result;
+});
+
+const sumaTotalMatriz = computed(() =>
+  sumasPorFila.value.reduce((acc, val) => acc + val, 0),
+);
+
+const ocupadosPorFila = computed(() =>
+  matrixData.value.matrix.map(
+    (row) => row.filter((value) => Number(value) !== 0).length,
+  ),
+);
+
+const ocupadosPorColumna = computed(() => {
+  const filas = matrixData.value.matrix;
+  const columnas = totalColumnas.value;
+  const result = Array(columnas).fill(0);
+
+  for (let i = 0; i < filas.length; i += 1) {
+    for (let j = 0; j < columnas; j += 1) {
+      if (Number(filas[i][j]) !== 0) result[j] += 1;
+    }
+  }
+
+  return result;
+});
+
+const totalOcupados = computed(() =>
+  ocupadosPorFila.value.reduce((acc, val) => acc + val, 0),
+);
+
+const convergenciaPorNodo = computed(() => {
+  const filas = matrixData.value.matrix;
+  const columnas = totalColumnas.value;
+  const result = Array(columnas).fill(0);
+
+  for (let i = 0; i < filas.length; i += 1) {
+    for (let j = 0; j < columnas; j += 1) {
+      if (Number(filas[i][j]) !== 0) result[j] += 1;
+    }
+  }
+
+  return result;
+});
+
+const resumenConvergencia = computed(() =>
+  matrixData.value.labels.map(
+    (label, index) => `${label}: ${convergenciaPorNodo.value[index] ?? 0}`,
+  ),
+);
+
 const options = {
   physics: { enabled: false },
   interaction: { hover: true, dragNodes: true, dragView: true, zoomView: true },
   nodes: {
     shape: "circle",
-    font: { size: 18, color: "#000000" } /* Letra negra sólida y segura */,
+    font: { size: 18, color: "#000000" },
     borderWidth: 2,
     shadow: true,
     color: { background: "#97C2FC", border: "#2B7CE9" },
@@ -113,7 +231,6 @@ onMounted(() => {
     window.addEventListener("keydown", handleKeyDown);
 
     network.on("doubleClick", (params) => {
-      // ¡RECUERDA! Solo funciona si tienes la flechita (Mover) seleccionada
       if (currentMode.value === "move") {
         const clickedNodeId = params.nodes.length > 0 ? params.nodes[0] : null;
         const clickedEdgeId =
@@ -136,17 +253,16 @@ onMounted(() => {
       if (currentMode.value === "delete")
         borrarSeleccion(clickedNodeId, clickedEdgeId);
 
-      // Aquí es donde se agrega el nodo si la herramienta está activa
       if (currentMode.value === "node" && !clickedNodeId)
         addNode(clickPos.x, clickPos.y);
 
       if (currentMode.value === "edge" && clickedNodeId) {
         if (sourceNode.value === null) setSourceNode(clickedNodeId);
         else {
-          let peso = prompt("Ingresa el peso de la arista (SOLO NÚMEROS):");
+          let peso = prompt("Ingresa el peso de la arista (SOLO NUMEROS):");
           if (peso !== null) {
             while (isNaN(peso) || peso.trim() === "") {
-              peso = prompt("❌ Valor inválido. Ingresa SOLO NÚMEROS:");
+              peso = prompt("Valor invalido. Ingresa SOLO NUMEROS:");
               if (peso === null) break;
             }
           }
@@ -180,35 +296,28 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* --- MAQUETACIÓN DIVIDIDA (EL CONTENEDOR PADRE) --- */
 .editor-layout {
   display: flex;
   flex-direction: row;
   width: 100%;
-
-  /* Usamos 85vh (85% de la pantalla) que es mucho más seguro 
-     y no chocará con tu barra verde de arriba */
   height: 85vh;
   min-height: 600px;
   overflow: hidden;
-  border-bottom: 2px solid #e2e8f0; /* Una línea sutil para ver dónde termina tu área de trabajo */
+  border-bottom: 2px solid #e2e8f0;
 }
 
-/* --- LADO IZQUIERDO (EL LIENZO) --- */
 .canvas-wrapper {
-  flex: 1; /* Toma el 70% o el 100% según si la matriz está abierta */
-  position: relative; /* Clave para el truco de abajo */
+  flex: 1;
+  position: relative;
   height: 100%;
 }
 
 .canvas-container {
-  /* ¡ESTE ES EL TRUCO MÁGICO! Fuerza al lienzo a estirarse a las 4 esquinas de su padre */
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-
   width: 100%;
   height: 100%;
   background: #ffffff;
@@ -217,11 +326,10 @@ onUnmounted(() => {
   outline: none;
 }
 
-/* --- LADO DERECHO (EL PANEL DE LA MATRIZ) --- */
 .matrix-panel {
   width: 30%;
   min-width: 320px;
-  height: 100%; /* Obliga a la matriz a tener la misma altura que el lienzo */
+  height: 100%;
   background: #f8fafc;
   border-left: 2px solid #e2e8f0;
   display: flex;
@@ -249,33 +357,44 @@ onUnmounted(() => {
   flex: 1;
 }
 
-/* --- TABLA --- */
 .matriz-table {
   border-collapse: collapse;
   margin: 0 auto;
   background: white;
 }
 
-/* 2. Busca .matriz-table th, .matriz-table td y reemplázalo por esto: */
 .matriz-table th,
 .matriz-table td {
   border: 1px solid #cbd5e1;
-  /* Reducimos de 40px a 32px para que la tabla sea más compacta */
   width: 32px;
   height: 32px;
   text-align: center;
   vertical-align: middle;
-  font-size: 0.9rem; /* Letra un pelín más pequeña */
+  font-size: 0.9rem;
 }
+
 .row-header {
   background: #f1f5f9;
   color: #334155;
+}
+
+.sum-header,
+.sum-cell,
+.sum-row .row-header {
+  background: #ecfeff;
+  color: #155e75;
+  font-weight: 700;
+}
+
+.total-cell {
+  background: #cffafe;
 }
 
 .celda-cero {
   color: #cbd5e1;
   font-size: 0.85rem;
 }
+
 .celda-valor {
   font-weight: bold;
   color: #2563eb;
@@ -292,10 +411,16 @@ onUnmounted(() => {
   border-top: 1px solid #e2e8f0;
 }
 
+.convergencia-info {
+  padding-top: 10px;
+  border-top: none;
+}
+
 @media (max-width: 768px) {
   .editor-layout {
     flex-direction: column;
   }
+
   .matrix-panel {
     width: 100%;
     height: 300px;
