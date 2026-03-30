@@ -1,32 +1,59 @@
 <template>
   <div class="assignment-editor">
     <div class="assignment-header">
-      <h2>Algoritmo de Asignacion</h2>
-      <p>Usa el mismo editor de grafos para dibujar un bipartito NxN y luego conviertelo en matriz.</p>
+      <h2>Algoritmo de Asignación</h2>
+      <p>Usa el mismo editor de grafos para dibujar un bipartito NxN y luego conviértelo en matriz.</p>
     </div>
 
     <div class="editor-layout">
-      <Toolbar :show-files="false" :show-visualization="false" />
+      <!-- Panel izquierdo: Herramientas -->
+      <div class="tools-panel">
+        <div class="tools-header">
+          <h3>
+            <span class="icon">🛠️</span>
+            Herramientas
+          </h3>
+        </div>
+        <Toolbar :show-files="false" :show-visualization="false" />
+      </div>
 
-      <div class="canvas-area">
+      <!-- Panel central: Pizarra de grafos -->
+      <div class="canvas-panel">
+        <div class="canvas-header">
+          <h3>
+            <span class="icon">📐</span>
+            Editor de Grafos
+          </h3>
+        </div>
         <div class="graph-surface">
           <GraphCanvas />
         </div>
+      </div>
 
-        <div class="assignment-panel">
-          <div class="panel-section">
-            <h3>Generar Matriz</h3>
-            <p>
-              Dibuja el grafo con nodos tipo <strong>O1...On</strong> para origenes y
+      <!-- Panel derecho: Configuración y resultados -->
+      <div class="config-panel">
+        <div class="config-sections">
+          <!-- Sección Generar Matriz - Ahora más grande -->
+          <div class="config-card matrix-generator-card">
+            <h3>
+              <span class="icon">📊</span>
+              Generar Matriz
+            </h3>
+            <p class="card-description">
+              Dibuja el grafo con nodos tipo <strong>O1...On</strong> para orígenes y
               <strong>D1...Dn</strong> para destinos.
             </p>
-            <button @click="generateAssignmentMatrix" class="panel-btn primary">
+            <button @click="generateAssignmentMatrix" class="btn-primary btn-large">
               Generar matriz desde el grafo
             </button>
           </div>
 
-          <div class="panel-section">
-            <h3>Algoritmo</h3>
+          <!-- Sección Algoritmo -->
+          <div class="config-card">
+            <h3>
+              <span class="icon">⚙️</span>
+              Algoritmo
+            </h3>
             <div class="problem-toggle">
               <button
                 @click="problemType = 'min'"
@@ -45,35 +72,23 @@
             </div>
             <button
               @click="runAssignment"
-              class="panel-btn primary"
+              class="btn-primary"
               :disabled="!matrixGenerated"
             >
-              Ejecutar algoritmo de asignacion
+              Ejecutar algoritmo de asignación
             </button>
           </div>
 
-          <div class="panel-section">
-            <h3>Estado</h3>
-            <div class="status-card" :class="statusTone">
-              {{ statusMessage }}
-            </div>
-          </div>
-
-          <div class="panel-section">
-            <h3>Referencia</h3>
-            <small>Solo se toman aristas desde origenes hacia destinos.</small>
-            <small>La matriz se arma con filas Oi y columnas Dj.</small>
-            <small>Debe haber la misma cantidad de origenes y destinos.</small>
-          </div>
-
-          <div v-if="matrixGenerated" class="panel-section">
-            <h3>Matriz Generada</h3>
-
+          <!-- Matriz Generada -->
+          <div v-if="matrixGenerated" class="matrix-section">
+            <h3>
+              <span class="icon">📋</span>
+              Matriz Generada
+            </h3>
             <div class="matrix-info">
-              <span class="matrix-type">Bipartita</span>
-              <span class="matrix-size">{{ detectedOrigins.length }} x {{ detectedDestinations.length }}</span>
+              <span class="matrix-badge">Bipartita</span>
+              <span class="matrix-size">{{ detectedOrigins.length }} × {{ detectedDestinations.length }}</span>
             </div>
-
             <div class="matrix-table-container">
               <table class="matrix-table">
                 <thead>
@@ -104,23 +119,25 @@
             </div>
           </div>
 
-          <div v-if="assignmentResult" class="panel-section">
-            <h3>Resultado Optimo</h3>
-
+          <!-- Resultado Óptimo -->
+          <div v-if="assignmentResult" class="result-section">
+            <h3>
+              <span class="icon">🏆</span>
+              Resultado Óptimo
+            </h3>
             <div class="result-summary" :class="problemType">
-              <span>{{ problemType === 'min' ? 'Costo minimo total' : 'Beneficio maximo total' }}</span>
+              <span>{{ problemType === 'min' ? 'Costo mínimo total' : 'Beneficio máximo total' }}</span>
               <strong>{{ assignmentResult.totalValue }}</strong>
             </div>
-
             <div class="assignment-list">
               <div
                 v-for="(assignment, index) in assignmentResult.assignments"
                 :key="'assignment-' + index"
                 class="assignment-item"
               >
-                <span>{{ assignment.origin }}</span>
+                <span class="assignment-origin">{{ assignment.origin }}</span>
                 <span class="assignment-arrow">→</span>
-                <span>{{ assignment.destination }}</span>
+                <span class="assignment-destination">{{ assignment.destination }}</span>
                 <span class="assignment-weight">{{ assignment.value }}</span>
               </div>
             </div>
@@ -143,7 +160,7 @@ const generatedMatrix = ref([]);
 const matrixGenerated = ref(false);
 const assignmentResult = ref(null);
 const problemType = ref("min");
-const statusMessage = ref("Dibuja el bipartito y presiona el boton para convertirlo.");
+const statusMessage = ref("");
 const statusTone = ref("neutral");
 const detectedOrigins = ref([]);
 const detectedDestinations = ref([]);
@@ -189,7 +206,6 @@ const getPositionBasedPartition = (allNodes) => {
 };
 
 const getEdgeBasedPartition = (allNodes, edgeList) => {
-
   if (allNodes.length < 2) {
     return { origins: [], destinations: [] };
   }
@@ -272,8 +288,7 @@ const generateAssignmentMatrix = () => {
   if (originList.length === 0 || destinationList.length === 0) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value =
-      "No se pudo identificar el bipartito. Usa etiquetas Oi/Dj, direccion de aristas origen->destino o separa los nodos entre izquierda y derecha.";
+    statusMessage.value = "❌ Error: No se pudo identificar el bipartito.";
     statusTone.value = "error";
     return;
   }
@@ -281,7 +296,7 @@ const generateAssignmentMatrix = () => {
   if (originList.length !== destinationList.length) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value = "El grafo debe ser bipartito NxN: misma cantidad de origenes y destinos.";
+    statusMessage.value = "❌ Error: El grafo debe ser bipartito NxN.";
     statusTone.value = "error";
     return;
   }
@@ -299,7 +314,7 @@ const generateAssignmentMatrix = () => {
   if (originIndexes.some((index) => index === undefined) || destinationIndexes.some((index) => index === undefined)) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value = "No se pudieron ubicar todos los nodos dentro de la matriz del GraphCanvas.";
+    statusMessage.value = "❌ Error: No se pudieron ubicar los nodos en la matriz.";
     statusTone.value = "error";
     return;
   }
@@ -308,34 +323,16 @@ const generateAssignmentMatrix = () => {
     destinationIndexes.map((destinationIndex) => Number(fullMatrix[originIndex]?.[destinationIndex] ?? 0)),
   );
 
-  const invalidEdges = edges.get().filter((edge) => {
-    const fromNode = nodes.get(edge.from);
-    const toNode = nodes.get(edge.to);
-    return !/^o\d+$/i.test(String(fromNode?.label || "").trim()) || !/^d\d+$/i.test(String(toNode?.label || "").trim());
-  });
-
   generatedMatrix.value = matrix;
   matrixGenerated.value = true;
   assignmentResult.value = null;
-
-  if (invalidEdges.length > 0) {
-    statusMessage.value =
-      "La matriz se genero correctamente.";
-    statusTone.value = "warning";
-  } else {
-    statusMessage.value =
-      mode === "labels"
-        ? "Matriz generada correctamente desde el grafo bipartito."
-        : mode === "edges"
-          ? "Matriz generada correctamente usando la direccion de las aristas."
-        : "Matriz generada correctamente usando la posicion de los nodos (izquierda y derecha).";
-    statusTone.value = "success";
-  }
+  statusMessage.value = "✓ Matriz generada correctamente";
+  statusTone.value = "success";
 };
 
 const runAssignment = () => {
   if (!matrixGenerated.value || generatedMatrix.value.length === 0) {
-    statusMessage.value = "Primero genera la matriz desde el grafo.";
+    statusMessage.value = "❌ Error: Primero genera la matriz desde el grafo.";
     statusTone.value = "error";
     return;
   }
@@ -360,10 +357,9 @@ const runAssignment = () => {
     totalValue: assignments.reduce((sum, item) => sum + item.value, 0),
   };
 
-  statusMessage.value =
-    problemType.value === "min"
-      ? "Asignacion optima calculada por minimizacion."
-      : "Asignacion optima calculada por maximizacion.";
+  statusMessage.value = problemType.value === "min" 
+    ? "✓ Asignación óptima calculada por minimización" 
+    : "✓ Asignación óptima calculada por maximización";
   statusTone.value = "success";
 };
 
@@ -434,7 +430,7 @@ const handleGraphChange = () => {
   assignmentResult.value = null;
   detectedOrigins.value = [];
   detectedDestinations.value = [];
-  statusMessage.value = "El grafo cambio. Vuelve a generar la matriz.";
+  statusMessage.value = "";
   statusTone.value = "neutral";
 };
 
@@ -456,22 +452,21 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: #f8fafc;
   overflow: hidden;
 }
 
 .assignment-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 20px 28px;
   background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
-  position: relative;
-  z-index: 2;
 }
 
 .assignment-header h2 {
-  margin: 0 0 8px;
-  font-size: 1.35rem;
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #0f172a;
 }
 
@@ -485,205 +480,277 @@ onUnmounted(() => {
   display: flex;
   flex: 1;
   min-height: 0;
+  gap: 0;
   overflow: hidden;
-  background: #ffffff;
 }
 
-.canvas-area {
-  flex: 1;
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
+/* Panel izquierdo - Herramientas */
+.tools-panel {
+  width: 280px;
+  flex-shrink: 0;
   background: #ffffff;
-}
-
-.graph-surface {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  background: #ffffff;
-}
-
-.assignment-panel {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 380px;
-  max-height: calc(100% - 40px);
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
 }
 
-.panel-section {
-  padding: 18px 20px;
+.tools-header {
+  padding: 20px 20px 12px 20px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.panel-section:last-child {
-  border-bottom: none;
-}
-
-.panel-section h3 {
-  margin: 0 0 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-.panel-section p,
-.panel-section small {
-  display: block;
-  margin: 0 0 6px;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: #475569;
-}
-
-.panel-btn {
-  width: 100%;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+.tools-header h3 {
+  margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Panel central - Pizarra */
+.canvas-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.canvas-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.canvas-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.graph-surface {
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+  position: relative;
+}
+
+/* Panel derecho - Configuración */
+.config-panel {
+  width: 450px;
+  flex-shrink: 0;
+  background: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.config-sections {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Tarjeta de Generar Matriz - Más grande */
+.matrix-generator-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.matrix-generator-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  color: #1e40af;
+}
+
+.matrix-generator-card .card-description {
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.btn-large {
+  padding: 14px 20px;
+  font-size: 1rem;
+  border-radius: 14px;
+}
+
+.config-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
   transition: all 0.2s;
 }
 
-.panel-btn.primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
+.config-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.panel-btn:disabled {
-  opacity: 0.55;
+.config-card h3 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-card h3 .icon {
+  font-size: 1rem;
+}
+
+.card-description {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.card-description strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-.panel-btn:hover {
-  transform: translateY(-1px);
-}
-
 .problem-toggle {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .toggle-btn {
   flex: 1;
-  padding: 9px 10px;
+  padding: 8px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #475569;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .toggle-btn.active {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
 }
 
-.status-card {
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  line-height: 1.5;
+/* Sección de matriz */
+.matrix-section,
+.result-section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
   border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
 }
 
-.status-card.success {
-  background: #ecfdf5;
-  color: #166534;
-  border-color: #bbf7d0;
-}
-
-.status-card.warning {
-  background: #fffbeb;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.status-card.error {
-  background: #fef2f2;
-  color: #991b1b;
-  border-color: #fecaca;
+.matrix-section h3,
+.result-section h3 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .matrix-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
-.matrix-type {
-  font-size: 0.85rem;
+.matrix-badge {
+  font-size: 0.7rem;
   font-weight: 600;
   color: #3b82f6;
   background: #dbeafe;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 20px;
 }
 
 .matrix-size {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #64748b;
   font-family: monospace;
 }
 
 .matrix-table-container {
   overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .matrix-table {
   border-collapse: collapse;
   width: 100%;
-  background: white;
+  font-size: 0.75rem;
 }
 
 .matrix-table th,
 .matrix-table td {
-  border: 1px solid #cbd5e1;
-  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  padding: 8px 10px;
   text-align: center;
-  min-width: 52px;
+  min-width: 48px;
 }
 
 .matrix-table th {
   background: #f1f5f9;
   font-weight: 600;
   color: #334155;
-  position: sticky;
-  top: 0;
 }
 
-.corner-cell,
-.col-header,
-.row-header {
-  background: #f1f5f9;
+.corner-cell {
+  background: #f8fafc;
 }
 
 .row-header {
+  background: #f8fafc;
+  font-weight: 600;
   position: sticky;
   left: 0;
 }
@@ -694,11 +761,12 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+/* Resultados */
 .result-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 14px;
   font-size: 0.85rem;
@@ -715,6 +783,10 @@ onUnmounted(() => {
   color: #1d4ed8;
 }
 
+.result-summary strong {
+  font-size: 1.1rem;
+}
+
 .assignment-list {
   display: flex;
   flex-direction: column;
@@ -724,53 +796,84 @@ onUnmounted(() => {
 .assignment-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 12px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  background: #ffffff;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
+}
+
+.assignment-origin,
+.assignment-destination {
+  font-weight: 600;
   color: #334155;
 }
 
 .assignment-arrow {
   color: #94a3b8;
+  font-size: 0.9rem;
 }
 
 .assignment-weight {
   margin-left: auto;
   font-weight: 700;
-  color: #0f172a;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
 }
 
-.assignment-panel::-webkit-scrollbar {
+/* Scrollbar */
+.tools-panel::-webkit-scrollbar,
+.config-panel::-webkit-scrollbar {
   width: 6px;
 }
 
-.assignment-panel::-webkit-scrollbar-track {
+.tools-panel::-webkit-scrollbar-track,
+.config-panel::-webkit-scrollbar-track {
   background: #f1f5f9;
+}
+
+.tools-panel::-webkit-scrollbar-thumb,
+.config-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
   border-radius: 10px;
 }
 
-.assignment-panel::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+/* Responsive */
+@media (max-width: 1200px) {
+  .tools-panel {
+    width: 240px;
+  }
+  
+  .config-panel {
+    width: 400px;
+  }
 }
 
 @media (max-width: 900px) {
   .editor-layout {
     flex-direction: column;
   }
-
-  .assignment-panel {
-    position: static;
-    width: auto;
-    max-height: none;
-    margin: 16px;
+  
+  .tools-panel,
+  .config-panel {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-left: none;
+    border-bottom: 1px solid #e2e8f0;
   }
-
-  .canvas-area {
-    overflow: auto;
+  
+  .tools-panel:last-child,
+  .config-panel:last-child {
+    border-bottom: none;
+  }
+  
+  .canvas-panel {
+    min-height: 400px;
   }
 }
 </style>

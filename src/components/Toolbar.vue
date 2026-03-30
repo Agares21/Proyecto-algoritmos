@@ -18,6 +18,10 @@
           </div>
         </button>
       </div>
+
+      <button @click="clearGraph" class="quick-clear-btn">
+        Limpiar grafo
+      </button>
     </div>
 
     <div v-if="showFiles" class="toolbar-section">
@@ -171,6 +175,7 @@ const generateRandomGraph = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 12px;
 }
 
 .mode-btn {
@@ -224,6 +229,24 @@ const generateRandomGraph = () => {
 
 .active .mode-shortcut {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.quick-clear-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-clear-btn:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
 }
 
 .action-buttons {

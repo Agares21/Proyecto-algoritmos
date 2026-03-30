@@ -3,6 +3,7 @@ import HomeView from "../views/Homeview.vue";
 import EditorView from "../views/Editorview.vue";
 import AlgoritmoView from "@/views/algoritmo.vue";
 import AcercaView from "@/views/acercaview.vue";
+import AyudaView from "@/views/AyudaView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: "/acerca",
       name: "acerca",
       component: AcercaView,
+    },
+    {
+      path: "/ayuda",
+      name: "ayuda",
+      component: AyudaView,
     },
   ],
 });
