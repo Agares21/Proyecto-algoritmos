@@ -95,6 +95,14 @@ export function useGraph() {
     });
   };
 
+  const cancelEdgeSelection = () => {
+    if (sourceNode.value !== null) {
+      nodes.update({ id: sourceNode.value, color: null });
+    }
+    sourceNode.value = null;
+    edgeStep.value = currentMode.value === "edge" ? "Selecciona Origen" : "Inactivo";
+  };
+
   const connectNodes = (targetId, weight) => {
     if (sourceNode.value !== null) {
       edges.add({
@@ -104,9 +112,7 @@ export function useGraph() {
         arrows: "to",
         font: { align: "top", size: 14, color: "#333333", background: "white" },
       });
-      nodes.update({ id: sourceNode.value, color: null });
-      sourceNode.value = null;
-      edgeStep.value = "Selecciona Origen";
+      cancelEdgeSelection();
 
       if (showMatrixPanel.value) updateMatrix();
     }
@@ -251,5 +257,6 @@ export function useGraph() {
     toggleMatrixPanel,
     exportGraph,
     importGraph,
+    cancelEdgeSelection,
   };
 }

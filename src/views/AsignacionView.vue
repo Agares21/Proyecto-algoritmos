@@ -1,27 +1,25 @@
 <template>
   <div class="assignment-editor">
     <div class="assignment-header">
-      <h2>Algoritmo de Asignación</h2>
-      <p>Usa el mismo editor de grafos para dibujar un bipartito NxN y luego conviértelo en matriz.</p>
+      <h2>Algoritmo de Asignacion</h2>
+      <p>Usa el mismo editor de grafos para dibujar un bipartito NxN y luego convertirlo en matriz.</p>
     </div>
 
     <div class="editor-layout">
-      <!-- Panel izquierdo: Herramientas -->
       <div class="tools-panel">
         <div class="tools-header">
           <h3>
-            <span class="icon">🛠️</span>
+            <span class="icon">Herr</span>
             Herramientas
           </h3>
         </div>
         <Toolbar :show-files="false" :show-visualization="false" />
       </div>
 
-      <!-- Panel central: Pizarra de grafos -->
       <div class="canvas-panel">
         <div class="canvas-header">
           <h3>
-            <span class="icon">📐</span>
+            <span class="icon">Grafo</span>
             Editor de Grafos
           </h3>
         </div>
@@ -30,17 +28,15 @@
         </div>
       </div>
 
-      <!-- Panel derecho: Configuración y resultados -->
       <div class="config-panel">
         <div class="config-sections">
-          <!-- Sección Generar Matriz - Ahora más grande -->
           <div class="config-card matrix-generator-card">
             <h3>
-              <span class="icon">📊</span>
+              <span class="icon">Mtx</span>
               Generar Matriz
             </h3>
             <p class="card-description">
-              Dibuja el grafo con nodos tipo <strong>O1...On</strong> para orígenes y
+              Dibuja el grafo con nodos tipo <strong>O1...On</strong> para origenes y
               <strong>D1...Dn</strong> para destinos.
             </p>
             <button @click="generateAssignmentMatrix" class="btn-primary btn-large">
@@ -48,10 +44,9 @@
             </button>
           </div>
 
-          <!-- Sección Algoritmo -->
           <div class="config-card">
             <h3>
-              <span class="icon">⚙️</span>
+              <span class="icon">Alg</span>
               Algoritmo
             </h3>
             <div class="problem-toggle">
@@ -75,19 +70,25 @@
               class="btn-primary"
               :disabled="!matrixGenerated"
             >
-              Ejecutar algoritmo de asignación
+              Ejecutar algoritmo de asignacion
+            </button>
+            <button
+              @click="toggleResolution"
+              class="btn-secondary"
+              :disabled="!assignmentResult"
+            >
+              {{ showResolution ? "Ocultar resolucion paso a paso" : "Mostrar resolucion paso a paso" }}
             </button>
           </div>
 
-          <!-- Matriz Generada -->
           <div v-if="matrixGenerated" class="matrix-section">
             <h3>
-              <span class="icon">📋</span>
+              <span class="icon">Tabla</span>
               Matriz Generada
             </h3>
             <div class="matrix-info">
               <span class="matrix-badge">Bipartita</span>
-              <span class="matrix-size">{{ detectedOrigins.length }} × {{ detectedDestinations.length }}</span>
+              <span class="matrix-size">{{ detectedOrigins.length }} x {{ detectedDestinations.length }}</span>
             </div>
             <div class="matrix-table-container">
               <table class="matrix-table">
@@ -119,14 +120,13 @@
             </div>
           </div>
 
-          <!-- Resultado Óptimo -->
           <div v-if="assignmentResult" class="result-section">
             <h3>
-              <span class="icon">🏆</span>
-              Resultado Óptimo
+              <span class="icon">Res</span>
+              Resultado Optimo
             </h3>
             <div class="result-summary" :class="problemType">
-              <span>{{ problemType === 'min' ? 'Costo mínimo total' : 'Beneficio máximo total' }}</span>
+              <span>{{ problemType === "min" ? "Costo minimo total" : "Beneficio maximo total" }}</span>
               <strong>{{ assignmentResult.totalValue }}</strong>
             </div>
             <div class="assignment-list">
@@ -136,11 +136,68 @@
                 class="assignment-item"
               >
                 <span class="assignment-origin">{{ assignment.origin }}</span>
-                <span class="assignment-arrow">→</span>
+                <span class="assignment-arrow">-></span>
                 <span class="assignment-destination">{{ assignment.destination }}</span>
                 <span class="assignment-weight">{{ assignment.value }}</span>
               </div>
             </div>
+          </div>
+
+          <div v-if="showResolution && resolutionSteps.length" class="resolution-section">
+            <h3>
+              <span class="icon">Paso</span>
+              Resolucion paso a paso
+            </h3>
+
+            <div
+              v-for="(step, stepIndex) in resolutionSteps"
+              :key="'resolution-step-' + stepIndex"
+              class="resolution-step-card"
+            >
+              <div class="resolution-step-header">
+                <div>
+                  <h4>{{ step.title }}</h4>
+                  <p>{{ step.description }}</p>
+                </div>
+                <span class="resolution-step-index">Paso {{ stepIndex + 1 }}</span>
+              </div>
+
+              <div class="matrix-table-container compact">
+                <table class="matrix-table">
+                  <thead>
+                    <tr>
+                      <th class="corner-cell"></th>
+                      <th
+                        v-for="destination in detectedDestinations"
+                        :key="'resolution-destination-' + stepIndex + '-' + destination.id"
+                        class="col-header"
+                      >
+                        {{ destination.label }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, rowIndex) in step.matrix" :key="'resolution-row-' + stepIndex + '-' + rowIndex">
+                      <th class="row-header">{{ detectedOrigins[rowIndex]?.label }}</th>
+                      <td
+                        v-for="(cell, colIndex) in row"
+                        :key="'resolution-cell-' + stepIndex + '-' + rowIndex + '-' + colIndex"
+                        :class="{
+                          'nonzero-cell': cell !== 0,
+                          'highlight-cell': isHighlightedCell(step, rowIndex, colIndex),
+                        }"
+                      >
+                        {{ cell }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="statusMessage" class="status-panel" :class="statusTone">
+            {{ statusMessage }}
           </div>
         </div>
       </div>
@@ -154,7 +211,7 @@ import GraphCanvas from "../components/GraphCanvas.vue";
 import Toolbar from "../components/Toolbar.vue";
 import { useGraph } from "../composables/useGraph";
 
-const { nodes, edges, matrixData, updateMatrix } = useGraph();
+const { nodes, edges, matrixData, updateMatrix, clearGraph } = useGraph();
 
 const generatedMatrix = ref([]);
 const matrixGenerated = ref(false);
@@ -164,6 +221,8 @@ const statusMessage = ref("");
 const statusTone = ref("neutral");
 const detectedOrigins = ref([]);
 const detectedDestinations = ref([]);
+const resolutionSteps = ref([]);
+const showResolution = ref(false);
 
 const parseNodeOrder = (label) => {
   const match = String(label).match(/(\d+)/);
@@ -275,10 +334,81 @@ const resolvePartitions = () => {
   return { origins: [], destinations: [], mode: "none" };
 };
 
+const cloneMatrix = (matrix) => matrix.map((row) => [...row]);
+
+const reduceRows = (matrix) =>
+  matrix.map((row) => {
+    const minValue = Math.min(...row);
+    return row.map((value) => value - minValue);
+  });
+
+const reduceColumns = (matrix) => {
+  const reducedMatrix = cloneMatrix(matrix);
+  const totalColumns = reducedMatrix[0]?.length || 0;
+
+  for (let col = 0; col < totalColumns; col++) {
+    let minValue = Infinity;
+    for (let row = 0; row < reducedMatrix.length; row++) {
+      minValue = Math.min(minValue, reducedMatrix[row][col]);
+    }
+    for (let row = 0; row < reducedMatrix.length; row++) {
+      reducedMatrix[row][col] -= minValue;
+    }
+  }
+
+  return reducedMatrix;
+};
+
+const buildResolutionSteps = (originalMatrix, transformedMatrix, assignmentIndexes) => {
+  const steps = [
+    {
+      title: "Matriz inicial",
+      description: "Se muestra la matriz original obtenida desde el grafo.",
+      matrix: cloneMatrix(originalMatrix),
+    },
+  ];
+
+  let currentMatrix = cloneMatrix(transformedMatrix);
+
+  if (problemType.value === "max") {
+    steps.push({
+      title: "Transformacion a minimizacion",
+      description: "Para maximizar, se transforma la matriz antes de aplicar el algoritmo hungaro.",
+      matrix: cloneMatrix(currentMatrix),
+    });
+  }
+
+  currentMatrix = reduceRows(currentMatrix);
+  steps.push({
+    title: "Reduccion por filas",
+    description: "Se resta el menor valor de cada fila.",
+    matrix: cloneMatrix(currentMatrix),
+  });
+
+  currentMatrix = reduceColumns(currentMatrix);
+  steps.push({
+    title: "Reduccion por columnas",
+    description: "Se resta el menor valor de cada columna.",
+    matrix: cloneMatrix(currentMatrix),
+  });
+
+  steps.push({
+    title: "Asignacion optima",
+    description: "Se resaltan las celdas elegidas por la solucion final.",
+    matrix: cloneMatrix(originalMatrix),
+    highlightedCells: assignmentIndexes.map((destinationIndex, originIndex) => ({
+      row: originIndex,
+      col: destinationIndex,
+    })),
+  });
+
+  return steps;
+};
+
 const generateAssignmentMatrix = () => {
   updateMatrix();
 
-  const { origins: originList, destinations: destinationList, mode } = resolvePartitions();
+  const { origins: originList, destinations: destinationList } = resolvePartitions();
   const labels = matrixData.value.labels || [];
   const fullMatrix = matrixData.value.matrix || [];
 
@@ -288,7 +418,9 @@ const generateAssignmentMatrix = () => {
   if (originList.length === 0 || destinationList.length === 0) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value = "❌ Error: No se pudo identificar el bipartito.";
+    resolutionSteps.value = [];
+    showResolution.value = false;
+    statusMessage.value = "No se pudo identificar el bipartito.";
     statusTone.value = "error";
     return;
   }
@@ -296,7 +428,9 @@ const generateAssignmentMatrix = () => {
   if (originList.length !== destinationList.length) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value = "❌ Error: El grafo debe ser bipartito NxN.";
+    resolutionSteps.value = [];
+    showResolution.value = false;
+    statusMessage.value = "El grafo debe ser bipartito NxN.";
     statusTone.value = "error";
     return;
   }
@@ -311,34 +445,43 @@ const generateAssignmentMatrix = () => {
     labelToIndex.get(String(node.label).trim().toUpperCase()),
   );
 
-  if (originIndexes.some((index) => index === undefined) || destinationIndexes.some((index) => index === undefined)) {
+  if (
+    originIndexes.some((index) => index === undefined) ||
+    destinationIndexes.some((index) => index === undefined)
+  ) {
     matrixGenerated.value = false;
     generatedMatrix.value = [];
-    statusMessage.value = "❌ Error: No se pudieron ubicar los nodos en la matriz.";
+    resolutionSteps.value = [];
+    showResolution.value = false;
+    statusMessage.value = "No se pudieron ubicar los nodos en la matriz.";
     statusTone.value = "error";
     return;
   }
 
   const matrix = originIndexes.map((originIndex) =>
-    destinationIndexes.map((destinationIndex) => Number(fullMatrix[originIndex]?.[destinationIndex] ?? 0)),
+    destinationIndexes.map((destinationIndex) =>
+      Number(fullMatrix[originIndex]?.[destinationIndex] ?? 0),
+    ),
   );
 
   generatedMatrix.value = matrix;
   matrixGenerated.value = true;
   assignmentResult.value = null;
-  statusMessage.value = "✓ Matriz generada correctamente";
+  resolutionSteps.value = [];
+  showResolution.value = false;
+  statusMessage.value = "Matriz generada correctamente.";
   statusTone.value = "success";
 };
 
 const runAssignment = () => {
   if (!matrixGenerated.value || generatedMatrix.value.length === 0) {
-    statusMessage.value = "❌ Error: Primero genera la matriz desde el grafo.";
+    statusMessage.value = "Primero genera la matriz desde el grafo.";
     statusTone.value = "error";
     return;
   }
 
-  const originalMatrix = generatedMatrix.value.map((row) => [...row]);
-  let workingMatrix = originalMatrix.map((row) => [...row]);
+  const originalMatrix = cloneMatrix(generatedMatrix.value);
+  let workingMatrix = cloneMatrix(originalMatrix);
 
   if (problemType.value === "max") {
     const maxValue = Math.max(...workingMatrix.flat());
@@ -356,12 +499,22 @@ const runAssignment = () => {
     assignments,
     totalValue: assignments.reduce((sum, item) => sum + item.value, 0),
   };
-
-  statusMessage.value = problemType.value === "min" 
-    ? "✓ Asignación óptima calculada por minimización" 
-    : "✓ Asignación óptima calculada por maximización";
+  resolutionSteps.value = buildResolutionSteps(originalMatrix, workingMatrix, assignmentIndexes);
+  showResolution.value = false;
+  statusMessage.value =
+    problemType.value === "min"
+      ? "Asignacion optima calculada por minimizacion."
+      : "Asignacion optima calculada por maximizacion.";
   statusTone.value = "success";
 };
+
+const toggleResolution = () => {
+  if (!assignmentResult.value) return;
+  showResolution.value = !showResolution.value;
+};
+
+const isHighlightedCell = (step, rowIndex, colIndex) =>
+  step.highlightedCells?.some((cell) => cell.row === rowIndex && cell.col === colIndex) ?? false;
 
 const hungarianAlgorithm = (costMatrix) => {
   const n = costMatrix.length;
@@ -430,11 +583,15 @@ const handleGraphChange = () => {
   assignmentResult.value = null;
   detectedOrigins.value = [];
   detectedDestinations.value = [];
+  resolutionSteps.value = [];
+  showResolution.value = false;
   statusMessage.value = "";
   statusTone.value = "neutral";
 };
 
 onMounted(() => {
+  clearGraph();
+  handleGraphChange();
   nodes.on("*", handleGraphChange);
   edges.on("*", handleGraphChange);
 });
@@ -480,11 +637,9 @@ onUnmounted(() => {
   display: flex;
   flex: 1;
   min-height: 0;
-  gap: 0;
   overflow: hidden;
 }
 
-/* Panel izquierdo - Herramientas */
 .tools-panel {
   width: 280px;
   flex-shrink: 0;
@@ -496,11 +651,12 @@ onUnmounted(() => {
 }
 
 .tools-header {
-  padding: 20px 20px 12px 20px;
+  padding: 20px 20px 12px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.tools-header h3 {
+.tools-header h3,
+.canvas-header h3 {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
@@ -510,7 +666,6 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-/* Panel central - Pizarra */
 .canvas-panel {
   flex: 1;
   min-width: 0;
@@ -527,16 +682,6 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.canvas-header h3 {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .graph-surface {
   flex: 1;
   min-height: 0;
@@ -544,7 +689,6 @@ onUnmounted(() => {
   position: relative;
 }
 
-/* Panel derecho - Configuración */
 .config-panel {
   width: 450px;
   flex-shrink: 0;
@@ -561,7 +705,6 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-/* Tarjeta de Generar Matriz - Más grande */
 .matrix-generator-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 2px solid #3b82f6;
@@ -587,12 +730,15 @@ onUnmounted(() => {
   border-radius: 14px;
 }
 
-.config-card {
+.config-card,
+.matrix-section,
+.result-section,
+.resolution-section,
+.status-panel {
   background: #ffffff;
   border-radius: 16px;
   padding: 18px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s;
 }
 
 .config-card:hover {
@@ -600,7 +746,10 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.config-card h3 {
+.config-card h3,
+.matrix-section h3,
+.result-section h3,
+.resolution-section h3 {
   margin: 0 0 12px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -608,10 +757,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.config-card h3 .icon {
-  font-size: 1rem;
 }
 
 .card-description {
@@ -626,12 +771,10 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.btn-primary {
+.btn-primary,
+.btn-secondary {
   width: 100%;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-  border: none;
   border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -639,15 +782,32 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+}
+
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-.btn-primary:disabled {
+.btn-primary:disabled,
+.btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
+}
+
+.btn-secondary {
+  margin-top: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #dbeafe;
 }
 
 .problem-toggle {
@@ -673,26 +833,6 @@ onUnmounted(() => {
   background: #3b82f6;
   border-color: #3b82f6;
   color: white;
-}
-
-/* Sección de matriz */
-.matrix-section,
-.result-section {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-}
-
-.matrix-section h3,
-.result-section h3 {
-  margin: 0 0 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .matrix-info {
@@ -724,6 +864,10 @@ onUnmounted(() => {
   background: #ffffff;
 }
 
+.matrix-table-container.compact {
+  margin-top: 0;
+}
+
 .matrix-table {
   border-collapse: collapse;
   width: 100%;
@@ -744,12 +888,12 @@ onUnmounted(() => {
   color: #334155;
 }
 
-.corner-cell {
+.corner-cell,
+.row-header {
   background: #f8fafc;
 }
 
 .row-header {
-  background: #f8fafc;
   font-weight: 600;
   position: sticky;
   left: 0;
@@ -761,7 +905,12 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-/* Resultados */
+.highlight-cell {
+  background: #fde68a !important;
+  color: #92400e !important;
+  font-weight: 700;
+}
+
 .result-summary {
   display: flex;
   justify-content: space-between;
@@ -825,7 +974,64 @@ onUnmounted(() => {
   font-size: 0.75rem;
 }
 
-/* Scrollbar */
+.resolution-step-card + .resolution-step-card {
+  margin-top: 14px;
+}
+
+.resolution-step-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.resolution-step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.resolution-step-header h4 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.resolution-step-header p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.resolution-step-index {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-panel.success {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-panel.error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.status-panel.neutral {
+  color: #475569;
+}
+
 .tools-panel::-webkit-scrollbar,
 .config-panel::-webkit-scrollbar {
   width: 6px;
@@ -842,12 +1048,11 @@ onUnmounted(() => {
   border-radius: 10px;
 }
 
-/* Responsive */
 @media (max-width: 1200px) {
   .tools-panel {
     width: 240px;
   }
-  
+
   .config-panel {
     width: 400px;
   }
@@ -857,21 +1062,16 @@ onUnmounted(() => {
   .editor-layout {
     flex-direction: column;
   }
-  
+
   .tools-panel,
   .config-panel {
     width: 100%;
-    max-height: 200px;
+    max-height: 240px;
     border-right: none;
     border-left: none;
     border-bottom: 1px solid #e2e8f0;
   }
-  
-  .tools-panel:last-child,
-  .config-panel:last-child {
-    border-bottom: none;
-  }
-  
+
   .canvas-panel {
     min-height: 400px;
   }

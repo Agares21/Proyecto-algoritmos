@@ -65,6 +65,7 @@ const {
   sourceNode,
   setSourceNode,
   connectNodes,
+  cancelEdgeSelection,
   setMode,
   updateEdgeWeight,
   deleteNode,
@@ -172,8 +173,9 @@ onMounted(() => {
           let peso = prompt("Peso de la arista:");
           if (peso && !isNaN(peso) && peso.trim() !== "") {
             connectNodes(clickedNodeId, parseFloat(peso));
+          } else {
+            cancelEdgeSelection();
           }
-          setMode("move");
         }
       }
     });
