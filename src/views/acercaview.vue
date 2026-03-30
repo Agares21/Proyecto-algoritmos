@@ -4,7 +4,7 @@ import { ref } from "vue";
 const equipo = ref([
   {
     id: 1,
-    nombre: "Natalina Novillo",
+    nombre: "Natalia Novillo",
     foto: "/img/foto1.jpg",
   },
   {

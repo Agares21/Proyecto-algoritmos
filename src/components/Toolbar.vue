@@ -1,486 +1,363 @@
 <template>
-  <div class="toolbar">
-    <div class="group">
-      <button
-        @click="setMode('move')"
-        :class="{ active: currentMode === 'move' }"
-        title="Mover nodos"
-      >
-        🖐 Mover y Editar
-      </button>
-      <button
-        @click="setMode('node')"
-        :class="{ active: currentMode === 'node' }"
-        title="Clic en espacio vacio para crear"
-      >
-        🔵 Nodo
-      </button>
-      <button
-        @click="setMode('edge')"
-        :class="{ active: currentMode === 'edge' }"
-        title="Clic origen -> Clic destino"
-      >
-        🔗 Arista
-      </button>
+  <div class="toolbar-static">
+    <div class="toolbar-section">
+      <h3>Herramientas</h3>
 
-      <button
-        @click="setMode('delete')"
-        :class="{ active: currentMode === 'delete' }"
-        title="Clic en nodo/arista para borrar"
-        class="borrador"
-      >
-        🧽 Borrador
-      </button>
-    </div>
-
-    <div class="separator"></div>
-
-    <div class="options">
-      <label class="checkbox-label">
-        <input type="checkbox" :checked="isDirected" @change="toggleDirected" />
-        <span>Dirigido (Flechas)</span>
-      </label>
-    </div>
-
-    <span class="status" v-if="currentMode === 'edge'">
-      {{ edgeStep }}
-    </span>
-
-    <div class="group right-actions">
-      <button
-        @click="toggleMatrixPanel"
-        :class="{ 'matriz-active': showMatrixPanel }"
-        class="btn-matriz"
-      >
-        🧮 Matriz
-      </button>
-
-      <button @click="exportGraph" class="btn-exportar">💾 Exportar</button>
-
-      <input
-        type="file"
-        id="import-file"
-        accept=".json"
-        style="display: none"
-        @change="importGraph"
-      />
-      <label for="import-file" class="btn-importar base-btn">
-        📂 Importar
-      </label>
-
-      <div class="separator hide-mobile"></div>
-
-      <button @click="openHelp" class="btn-help">❓ Help</button>
-
-      <button @click="clearGraph" class="danger">🗑 Borrar Todo</button>
-    </div>
-
-    <div v-if="showHelpModal" class="help-overlay" @click.self="closeHelp">
-      <div class="help-modal" role="dialog" aria-modal="true" aria-label="Ayuda de grafo">
-        <div class="help-header">
-          <h3>Guia rapida de la ventana de grafos</h3>
-          <div class="help-actions">
-            <button class="btn-pdf" @click="downloadHelpPdf">📄 Descargar PDF</button>
-            <button class="help-close" @click="closeHelp" aria-label="Cerrar ayuda">X</button>
+      <div class="mode-buttons">
+        <button
+          v-for="tool in tools"
+          :key="tool.mode"
+          @click="setMode(tool.mode)"
+          :class="{ active: currentMode === tool.mode }"
+          class="mode-btn"
+        >
+          <span class="mode-icon">{{ tool.icon }}</span>
+          <div class="mode-info">
+            <span class="mode-name">{{ tool.name }}</span>
+            <span class="mode-shortcut">{{ tool.shortcut }}</span>
           </div>
-        </div>
-
-        <div class="help-content">
-          <p><strong>1. Herramientas principales</strong></p>
-          <p>
-            Mover y Editar: selecciona nodos/aristas y haz doble clic para editar
-            nombre o peso.
-          </p>
-          <p>Nodo: clic en espacio vacio para crear un nuevo nodo.</p>
-          <p>
-            Arista: selecciona nodo origen y luego destino para conectarlos con un
-            peso.
-          </p>
-          <p>Borrador: elimina nodos o aristas con un clic.</p>
-
-          <p><strong>2. Opciones</strong></p>
-          <p>Dirigido (Flechas): activa o desactiva la direccion de las aristas.</p>
-          <p>
-            Matriz: abre/cierra la matriz de adyacencia con conteos y sumas por
-            fila/columna.
-          </p>
-          <p>Exportar: guarda tu grafo en un archivo JSON.</p>
-          <p>Importar: carga un grafo desde un archivo JSON.</p>
-          <p>Borrar Todo: limpia todo el lienzo y reinicia la edicion.</p>
-
-          <p><strong>3. Atajos utiles</strong></p>
-          <p>
-            Puedes seleccionar un nodo o arista y presionar Delete/Backspace para
-            eliminar.
-          </p>
-        </div>
+        </button>
       </div>
+    </div>
+
+    <div v-if="showFiles" class="toolbar-section">
+      <h3>Archivos</h3>
+      <div class="action-buttons">
+        <button @click="exportGraph" class="action-btn export-btn">
+          Exportar
+        </button>
+        <input
+          type="file"
+          id="import-file"
+          accept=".json"
+          style="display: none"
+          @change="importGraph"
+        />
+        <label for="import-file" class="action-btn import-btn">
+          Importar
+        </label>
+        <button @click="generateRandomGraph" class="action-btn random-btn">
+          Aleatorio
+        </button>
+        <button @click="clearGraph" class="action-btn clear-btn">
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <div v-if="showVisualization" class="toolbar-section">
+      <h3>Visualizacion</h3>
+      <button @click="toggleMatrixPanel" class="matrix-btn">
+        {{ showMatrixPanel ? "Ocultar Matriz" : "Mostrar Matriz" }}
+      </button>
+    </div>
+
+    <div v-if="currentMode === 'edge' && edgeStep" class="status-bar">
+      <span class="status-icon">🔗</span>
+      <span class="status-text">{{ edgeStep }}</span>
+    </div>
+
+    <div class="toolbar-footer">
+      <small>Tips:</small>
+      <small>V: Mover | N: Nodo | E: Arista | D: Borrar</small>
+      <small>Doble click para editar</small>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { useGraph } from "../composables/useGraph";
+
+defineProps({
+  showFiles: {
+    type: Boolean,
+    default: true,
+  },
+  showVisualization: {
+    type: Boolean,
+    default: true,
+  },
+});
 
 const {
   setMode,
   currentMode,
   clearGraph,
-  isDirected,
-  toggleDirected,
   edgeStep,
-  toggleMatrixPanel,
-  showMatrixPanel,
   exportGraph,
   importGraph,
+  nodes,
+  edges,
+  showMatrixPanel,
+  toggleMatrixPanel,
 } = useGraph();
 
-const route = useRoute();
-const router = useRouter();
-const showHelpModal = ref(false);
+const tools = [
+  { mode: "move", name: "Mover", icon: "🖐️", shortcut: "V" },
+  { mode: "node", name: "Nodo", icon: "🔵", shortcut: "N" },
+  { mode: "edge", name: "Arista", icon: "🔗", shortcut: "E" },
+  { mode: "delete", name: "Borrar", icon: "🧽", shortcut: "D" },
+];
 
-const openHelp = () => {
-  showHelpModal.value = true;
-};
+const generateRandomGraph = () => {
+  const nodeCount = Math.floor(Math.random() * 8) + 4;
 
-const closeHelp = () => {
-  showHelpModal.value = false;
-  if (route.query.help) {
-    const query = { ...route.query };
-    delete query.help;
-    router.replace({ query });
+  nodes.clear();
+  edges.clear();
+
+  for (let i = 1; i <= nodeCount; i++) {
+    const angle = (i / nodeCount) * Math.PI * 2;
+    const radius = 200;
+    const x = 400 + radius * Math.cos(angle);
+    const y = 250 + radius * Math.sin(angle);
+
+    nodes.add({
+      id: i,
+      label: String.fromCharCode(64 + i),
+      x,
+      y,
+    });
+  }
+
+  for (let i = 1; i <= nodeCount; i++) {
+    for (let j = 1; j <= nodeCount; j++) {
+      if (i !== j && Math.random() < 0.25) {
+        const weight = Math.floor(Math.random() * 9) + 1;
+        edges.add({
+          from: i,
+          to: j,
+          label: String(weight),
+          arrows: "to",
+        });
+      }
+    }
   }
 };
-
-const downloadHelpPdf = () => {
-  const contenido = `
-    <h1>Manual general del sitio web</h1>
-    <p>Fecha: ${new Date().toLocaleDateString()}</p>
-
-    <h2>1. Inicio</h2>
-    <p>
-      Presenta el proyecto de Analisis de Algoritmos y da acceso rapido a las
-      secciones principales.
-    </p>
-
-    <h2>2. Algoritmo</h2>
-    <p>
-      Muestra contenido teorico/practico de algoritmos para consulta y apoyo de estudio.
-    </p>
-
-    <h2>3. Crea tu Grafo (Editor)</h2>
-    <p>
-      Es la zona interactiva para construir y analizar grafos con nodos, aristas,
-      pesos y matriz de adyacencia.
-    </p>
-    <p><strong>Herramientas:</strong></p>
-    <p>- Mover y Editar: seleccionar y editar nodos/aristas (doble clic).</p>
-    <p>- Nodo: crear nodos con clic en espacio vacio.</p>
-    <p>- Arista: conectar origen y destino, asignando peso.</p>
-    <p>- Borrador: eliminar nodos o aristas.</p>
-    <p>- Dirigido: alterna flechas en las aristas.</p>
-    <p>- Matriz: abre la matriz de adyacencia con conteos y sumas.</p>
-    <p>- Exportar/Importar: guardar y cargar grafos en JSON.</p>
-    <p>- Borrar Todo: limpia el lienzo.</p>
-    <p>- Atajo: Delete/Backspace elimina el elemento seleccionado.</p>
-
-    <h2>4. Acerca de</h2>
-    <p>
-      Seccion informativa del proyecto, objetivos, contexto y detalles del equipo.
-    </p>
-
-    <h2>Recomendaciones de uso</h2>
-    <p>
-      1) Activa Matriz para verificar conexiones y pesos en tiempo real.<br />
-      2) Usa Exportar para guardar avances frecuentes.<br />
-      3) Importa archivos JSON para continuar ejercicios anteriores.
-    </p>
-  `;
-
-  const ventana = window.open("", "_blank");
-  if (!ventana) return;
-
-  ventana.document.write(`
-    <!doctype html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8" />
-        <title>Manual del sitio - Analisis de Algoritmos</title>
-        <style>
-          body { font-family: Arial, sans-serif; color: #0f172a; margin: 24px; line-height: 1.5; }
-          h1 { font-size: 24px; margin-bottom: 8px; }
-          h2 { font-size: 18px; margin-top: 20px; margin-bottom: 8px; color: #0e7490; }
-          p { margin: 6px 0; }
-          @media print { body { margin: 14mm; } }
-        </style>
-      </head>
-      <body>
-        ${contenido}
-      </body>
-    </html>
-  `);
-  ventana.document.close();
-  ventana.focus();
-  ventana.print();
-};
-
-watch(
-  () => route.query.help,
-  (helpValue) => {
-    if (helpValue === "1" || helpValue === "true") {
-      showHelpModal.value = true;
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <style scoped>
-/* --- ESTILOS ORIGINALES (ESCRITORIO) --- */
-.toolbar {
-  padding: 10px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+.toolbar-static {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  position: relative;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 16px;
+  gap: 24px;
+  flex-shrink: 0;
 }
 
-.group {
+.toolbar-section {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 20px;
+}
+
+.toolbar-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.toolbar-section h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.mode-buttons {
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-btn {
+  display: flex;
   align-items: center;
-}
-
-.right-actions {
-  margin-left: auto;
-}
-
-button,
-.base-btn {
-  padding: 8px 16px;
-  border: 1px solid #ced4da;
-  background: white;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  font-weight: 500;
-  display: inline-block;
-  font-size: 0.9rem;
-  font-family: inherit;
-  color: #212529;
+  width: 100%;
+  text-align: left;
 }
 
-button:hover,
-.base-btn:hover {
-  background: #e9ecef;
+.mode-btn:hover {
+  background: #e2e8f0;
+  transform: translateX(2px);
 }
 
-button.active {
-  background: #0d6efd;
+.mode-btn.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #2563eb;
   color: white;
-  border-color: #0d6efd;
 }
 
-.borrador {
-  color: #dc3545;
+.mode-icon {
+  font-size: 1.2rem;
 }
 
-.checkbox-label {
+.mode-info {
+  flex: 1;
   display: flex;
+  justify-content: space-between;
   align-items: center;
+}
+
+.mode-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.mode-shortcut {
+  font-size: 0.7rem;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.active .mode-shortcut {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.action-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  user-select: none;
+  font-size: 0.85rem;
+  text-align: center;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 
-.status {
-  font-weight: bold;
-  color: #d63384;
-}
-
-.btn-matriz {
-  border-color: #10b981;
-  color: #10b981;
-}
-
-.btn-matriz.matriz-active,
-.btn-matriz:hover {
+.export-btn {
   background: #10b981;
   color: white;
 }
 
-.btn-exportar {
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
-.btn-exportar:hover {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-importar {
-  border-color: #f59e0b;
-  color: #f59e0b;
-}
-
-.btn-importar:hover {
+.import-btn {
   background: #f59e0b;
   color: white;
+  display: inline-block;
+  text-align: center;
+  cursor: pointer;
 }
 
-.btn-help {
-  border-color: #06b6d4;
-  color: #0e7490;
-}
-
-.btn-help:hover {
-  background: #06b6d4;
+.random-btn {
+  background: #8b5cf6;
   color: white;
 }
 
-.danger {
-  background: #dc3545;
+.clear-btn {
+  background: #ef4444;
   color: white;
-  border: none;
 }
 
-.danger:hover {
-  background: #bb2d3b;
+.action-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
-.separator {
-  width: 1px;
-  height: 25px;
-  background: #ccc;
+.matrix-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
 }
 
-.help-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(2, 6, 23, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 1000;
+.matrix-btn:hover {
+  background: #e2e8f0;
 }
 
-.help-modal {
-  width: min(680px, 100%);
-  max-height: 85vh;
-  overflow: hidden;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-}
-
-.help-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.help-header h3 {
-  margin: 0;
-  color: #0f172a;
-}
-
-.help-actions {
+.status-bar {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 0.8rem;
+  border-left: 3px solid #f59e0b;
 }
 
-.btn-pdf {
-  border-color: #0e7490;
-  color: #0e7490;
+.status-icon {
+  font-size: 1rem;
 }
 
-.btn-pdf:hover {
-  background: #0e7490;
-  color: #ffffff;
+.status-text {
+  font-weight: 500;
+  color: #92400e;
 }
 
-.help-close {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border-radius: 8px;
-  font-weight: 700;
+.toolbar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.help-content {
-  padding: 16px;
-  overflow-y: auto;
-  max-height: calc(85vh - 60px);
+.toolbar-footer small {
+  font-size: 0.7rem;
+  color: #94a3b8;
 }
 
-.help-content p {
-  margin: 0 0 10px;
-  color: #334155;
+.toolbar-static::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toolbar-static::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.toolbar-static::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {
-  .toolbar {
-    justify-content: center;
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .group {
-    justify-content: center;
+  .toolbar-static {
     width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    max-height: 300px;
   }
 
-  .right-actions {
-    margin-left: 0;
+  .mode-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
-  .separator {
-    display: none;
+  .mode-btn {
+    flex: 1;
+    min-width: 100px;
   }
 
-  .hide-mobile {
-    display: none;
+  .action-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
-  .danger,
-  .base-btn,
-  button {
-    flex-grow: 1;
-    text-align: center;
-  }
-
-  .options {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .status {
-    width: 100%;
-    text-align: center;
-    margin-top: -5px;
-  }
-
-  .help-modal {
-    max-height: 92vh;
-  }
-
-  .help-content {
-    max-height: calc(92vh - 60px);
+  .action-btn {
+    flex: 1;
   }
 }
 </style>

@@ -1,4 +1,3 @@
-// src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/Homeview.vue";
 import EditorView from "../views/Editorview.vue";
@@ -23,7 +22,6 @@ const router = createRouter({
       name: "algoritmo",
       component: AlgoritmoView,
     },
-
     {
       path: "/acerca",
       name: "acerca",
