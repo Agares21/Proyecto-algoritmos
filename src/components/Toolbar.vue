@@ -43,9 +43,7 @@
         <button @click="generateRandomGraph" class="action-btn random-btn">
           Aleatorio
         </button>
-        <button @click="clearGraph" class="action-btn clear-btn">
-          Limpiar
-        </button>
+        
       </div>
     </div>
 
