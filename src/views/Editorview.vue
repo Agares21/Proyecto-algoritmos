@@ -27,6 +27,15 @@
         <span class="tab-icon">🎯</span>
         <span>Algoritmo de Asignación</span>
       </button>
+
+      <button
+        @click="activeTab = 'northwest'"
+        :class="{ active: activeTab === 'northwest' }"
+        class="tab-btn"
+      >
+        <span class="tab-icon">NW</span>
+        <span>Esquina Noroeste</span>
+      </button>
     </div>
 
     <div v-if="activeTab === 'editor'" class="editor-layout">
@@ -43,6 +52,10 @@
     <div v-else-if="activeTab === 'asignacion'" class="asignacion-layout">
       <AsignacionView />
     </div>
+
+    <div v-else-if="activeTab === 'northwest'" class="northwest-layout">
+      <NorthwestView />
+    </div>
   </div>
 </template>
 
@@ -52,6 +65,7 @@ import Toolbar from "../components/Toolbar.vue";
 import GraphCanvas from "../components/GraphCanvas.vue";
 import JohnsonGraph from "../components/JohnsonGraph.vue";
 import AsignacionView from "./AsignacionView.vue";
+import NorthwestView from "./NorthwestView.vue";
 
 const activeTab = ref("editor");
 </script>
@@ -132,6 +146,12 @@ const activeTab = ref("editor");
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.northwest-layout {
+  flex: 1;
+  overflow: auto;
+  background: linear-gradient(135deg, #0f766e 0%, #164e63 100%);
 }
 
 @media (max-width: 768px) {
