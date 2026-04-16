@@ -83,10 +83,10 @@
               Modo actual: {{ currentModeLabel }}
             </div>
             <div class="tool-tips">
-              <span>V mover</span>
-              <span>N nodo</span>
-              <span>E arista</span>
-              <span>D borrar</span>
+              <span>Mover</span>
+              <span>Nodo</span>
+              <span>Arista</span>
+              <span>Borrar</span>
             </div>
           </div>
         </div>
@@ -419,10 +419,10 @@ const highlightedAssignmentEdgeIds = ref([]);
 let isUpdatingAssignmentStyles = false;
 
 const editorTools = [
-  { mode: "move", label: "Mover", icon: "M", shortcut: "V" },
-  { mode: "node", label: "Nodo", icon: "N", shortcut: "N" },
-  { mode: "edge", label: "Arista", icon: "A", shortcut: "E" },
-  { mode: "delete", label: "Borrar", icon: "B", shortcut: "D" },
+  { mode: "move", label: "Mover", shortcut: "V" },
+  { mode: "node", label: "Nodo", shortcut: "N" },
+  { mode: "edge", label: "Arista", shortcut: "E" },
+  { mode: "delete", label: "Borrar", shortcut: "D" },
 ];
 
 const currentModeLabel = computed(() => {
