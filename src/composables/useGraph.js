@@ -13,6 +13,24 @@ const showMatrixPanel = ref(false);
 const matrixData = ref({ labels: [], matrix: [] });
 
 export function useGraph() {
+  const sanitizeNodeForExport = (node) => {
+    const { color, borderWidth, shadow, chosen, ...cleanNode } = node;
+    return cleanNode;
+  };
+
+  const sanitizeEdgeForExport = (edge) => {
+    const {
+      color,
+      width,
+      dashes,
+      shadow,
+      chosen,
+      selectionWidth,
+      hoverWidth,
+      ...cleanEdge
+    } = edge;
+    return cleanEdge;
+  };
   // Función para calcular y actualizar la matriz
   const updateMatrix = () => {
     const allNodes = nodes.get().sort((a, b) => a.id - b.id);
@@ -173,8 +191,8 @@ export function useGraph() {
 
   const exportGraph = () => {
     const data = {
-      nodes: nodes.get(),
-      edges: edges.get(),
+      nodes: nodes.get().map(sanitizeNodeForExport),
+      edges: edges.get().map(sanitizeEdgeForExport),
       isDirected: true,
     };
     let fileName = window.prompt("Nombre del archivo:", "mi_grafo");

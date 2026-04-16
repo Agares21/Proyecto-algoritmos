@@ -78,6 +78,16 @@ const {
 
 let network = null;
 
+const fitGraph = () => {
+  if (!network) return;
+  network.fit({
+    animation: {
+      duration: 500,
+      easingFunction: "easeInOutQuad",
+    },
+  });
+};
+
 const options = {
   physics: { enabled: false },
   interaction: { 
@@ -138,6 +148,7 @@ onMounted(() => {
   if (canvasRef.value) {
     network = new Network(canvasRef.value, { nodes, edges }, options);
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("assignment-fit-graph", fitGraph);
     network.on("dragEnd", () => {
       network.storePositions();
     });
@@ -191,6 +202,7 @@ watch(currentMode, (newMode) => {
 onUnmounted(() => {
   if (network) network.destroy();
   window.removeEventListener("keydown", handleKeyDown);
+  window.removeEventListener("assignment-fit-graph", fitGraph);
 });
 </script>
 
