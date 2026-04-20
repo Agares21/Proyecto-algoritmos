@@ -66,6 +66,9 @@
                 Limpiar
               </button>
             </div>
+            <button class="panel-help-btn" @click="showTabHelp">
+              Ayuda
+            </button>
             <input
               ref="importInputRef"
               type="file"
@@ -367,6 +370,66 @@
           </div>
           </Teleport>
 
+          <Teleport to="body">
+          <div v-if="showHelpModal" class="help-modal-overlay" @click.self="closeHelpModal">
+            <div class="help-modal">
+              <div class="help-modal-header">
+                <div class="section-title">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-4a1 1 0 00-.867.5l-1 1.5a1 1 0 001.664 1.11L10 8.618l.203.304A1 1 0 0011.868 7.81l-1-1.5A1 1 0 0010 6zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z" clip-rule="evenodd"/>
+                  </svg>
+                  <h3>Ayuda</h3>
+                </div>
+                <button class="resolution-close-btn" @click="closeHelpModal" aria-label="Cerrar ayuda">
+                  ×
+                </button>
+              </div>
+
+              <div class="help-modal-body">
+                <div class="help-block">
+                  <h4>¿Qué hace esta pestaña?</h4>
+                  <p>
+                    Esta vista resuelve problemas de asignación a partir de un grafo bipartito NxN.
+                    Puedes dibujar el grafo, importarlo, generar la matriz de costos o beneficios y
+                    ejecutar el algoritmo para obtener la mejor asignación.
+                  </p>
+                </div>
+
+                <div class="help-block">
+                  <h4>Cómo usarla</h4>
+                  <p>1. Crea o importa un grafo bipartito.</p>
+                  <p>2. Usa nodos tipo O1...On para orígenes y D1...Dn para destinos.</p>
+                  <p>3. Conecta los nodos con aristas y asigna sus pesos.</p>
+                  <p>4. Pulsa `Generar matriz desde el grafo`.</p>
+                  <p>5. Elige si deseas minimizar o maximizar.</p>
+                  <p>6. Ejecuta el algoritmo para ver el resultado óptimo.</p>
+                  <p>7. Si quieres entender el proceso, abre `Ver paso a paso`.</p>
+                </div>
+
+                <div class="help-block">
+                  <h4>Herramientas del editor</h4>
+                  <p><strong>Mover:</strong> reubica los nodos.</p>
+                  <p><strong>Nodo:</strong> agrega nuevos nodos al lienzo.</p>
+                  <p><strong>Arista:</strong> conecta origen y destino con un peso.</p>
+                  <p><strong>Borrar:</strong> elimina nodos o aristas seleccionadas.</p>
+                </div>
+
+                <div class="help-block">
+                  <h4>Atajos útiles</h4>
+                  <p>`V` mover, `N` nodo, `E` arista y `D` borrar.</p>
+                  <p>Doble clic en un nodo o una arista para editar su nombre o peso.</p>
+                </div>
+              </div>
+
+              <div class="help-modal-actions">
+                <button class="resolution-back-btn" @click="closeHelpModal">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+          </Teleport>
+
           <!-- Mensaje de estado -->
           <div v-if="statusMessage" class="status-message" :class="statusTone">
             <svg v-if="statusTone === 'success'" viewBox="0 0 20 20" fill="currentColor">
@@ -415,6 +478,7 @@ const detectedOrigins = ref([]);
 const detectedDestinations = ref([]);
 const resolutionSteps = ref([]);
 const showResolution = ref(false);
+const showHelpModal = ref(false);
 const highlightedAssignmentEdgeIds = ref([]);
 let isUpdatingAssignmentStyles = false;
 
@@ -809,9 +873,21 @@ const closeResolution = () => {
   showResolution.value = false;
 };
 
+const showTabHelp = () => {
+  showHelpModal.value = true;
+};
+
+const closeHelpModal = () => {
+  showHelpModal.value = false;
+};
+
 const handleViewKeyDown = (event) => {
   if (event.key === "Escape" && showResolution.value) {
     closeResolution();
+  }
+
+  if (event.key === "Escape" && showHelpModal.value) {
+    closeHelpModal();
   }
 };
 
@@ -1183,6 +1259,25 @@ onUnmounted(() => {
   background: linear-gradient(180deg, #fff1f2, #ffe4e6);
   color: #be123c;
   border-color: rgba(253, 164, 175, 0.9);
+}
+
+.panel-help-btn {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid rgba(191, 219, 254, 0.95);
+  background: linear-gradient(180deg, #ffffff, #eff6ff);
+  color: #1d4ed8;
+  border-radius: 14px;
+  padding: 11px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.panel-help-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(59, 130, 246, 0.1);
 }
 
 .hidden-import-input {
@@ -1623,6 +1718,78 @@ onUnmounted(() => {
   backdrop-filter: blur(8px);
 }
 
+.help-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.help-modal {
+  width: min(760px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 24px;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.26);
+  overflow: hidden;
+}
+
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.help-modal-body {
+  overflow-y: auto;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.help-block {
+  background: linear-gradient(135deg, var(--gray-50), white);
+  border: 1px solid var(--gray-200);
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.help-block h4 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.help-block p {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+.help-block p:last-child {
+  margin-bottom: 0;
+}
+
+.help-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 18px 24px 22px;
+  border-top: 1px solid var(--gray-200);
+}
+
 .section-header {
   display: flex;
   align-items: center;
@@ -1994,6 +2161,18 @@ onUnmounted(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+
+  .help-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .help-modal-header,
+  .help-modal-body,
+  .help-modal-actions {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 </style>
