@@ -33,6 +33,8 @@
         <div class="actions">
           <button class="btn btn-primary" @click="resizeTable">Actualizar matriz</button>
           <button class="btn btn-secondary" @click="loadExample">Cargar ejemplo</button>
+          <button class="btn btn-secondary" @click="exportData">Exportar</button>
+          <button class="btn btn-secondary" @click="triggerImport">Importar</button>
           <button class="btn btn-ghost" @click="resetData">Limpiar</button>
         </div>
 
@@ -55,6 +57,18 @@
         <button class="btn btn-accent" @click="runNorthwest">
           Ejecutar esquina noroeste
         </button>
+
+        <button class="btn btn-help" @click="showHelpModal = true">
+          Ayuda
+        </button>
+
+        <input
+          ref="importInputRef"
+          type="file"
+          accept=".json"
+          class="hidden-import-input"
+          @change="importData"
+        />
 
         <p v-if="statusMessage" class="status" :class="statusTone">
           {{ statusMessage }}
@@ -172,6 +186,48 @@
         </div>
       </div>
     </section>
+
+    <Teleport to="body">
+      <div v-if="showHelpModal" class="help-modal-overlay" @click.self="showHelpModal = false">
+        <div class="help-modal">
+          <div class="help-modal-header">
+            <div>
+              <p class="eyebrow">Guia rapida</p>
+              <h3>Ayuda de esquina noroeste</h3>
+            </div>
+            <button class="help-close-btn" @click="showHelpModal = false" aria-label="Cerrar ayuda">
+              ×
+            </button>
+          </div>
+
+          <div class="help-modal-body">
+            <div class="help-block">
+              <h4>Que hace esta pestaña</h4>
+              <p>
+                Genera una solucion inicial factible para un problema de transporte usando
+                el metodo de la esquina noroeste.
+              </p>
+            </div>
+
+            <div class="help-block">
+              <h4>Como usarla</h4>
+              <p>1. Define la cantidad de origenes y destinos.</p>
+              <p>2. Completa la matriz de costos, la oferta y la demanda.</p>
+              <p>3. Si lo deseas, activa el balanceo automatico.</p>
+              <p>4. Pulsa `Ejecutar esquina noroeste` para obtener la asignacion inicial.</p>
+            </div>
+
+            <div class="help-block">
+              <h4>Importar y exportar</h4>
+              <p>
+                Puedes exportar la configuracion actual a un archivo JSON e importarla despues
+                para continuar trabajando con los mismos datos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -194,6 +250,8 @@ const demand = ref([7, 5, 3, 2]);
 const result = ref(null);
 const statusMessage = ref("");
 const statusTone = ref("neutral");
+const showHelpModal = ref(false);
+const importInputRef = ref(null);
 
 const totalSupply = computed(() =>
   supply.value.reduce((sum, value) => sum + normalizeNumber(value), 0),
@@ -251,6 +309,64 @@ function resetData() {
   result.value = null;
   statusMessage.value = "Datos reiniciados.";
   statusTone.value = "neutral";
+}
+
+function triggerImport() {
+  importInputRef.value?.click();
+}
+
+function exportData() {
+  const payload = {
+    rowCount: rowCount.value,
+    colCount: colCount.value,
+    autoBalance: autoBalance.value,
+    costs: costs.value,
+    supply: supply.value,
+    demand: demand.value,
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "northwest-data.json";
+  link.click();
+  URL.revokeObjectURL(url);
+
+  statusMessage.value = "Datos exportados correctamente.";
+  statusTone.value = "success";
+}
+
+async function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+
+    const rows = Math.min(Math.max(normalizeNumber(parsed.rowCount), 1), 10);
+    const cols = Math.min(Math.max(normalizeNumber(parsed.colCount), 1), 10);
+
+    rowCount.value = rows;
+    colCount.value = cols;
+    autoBalance.value = Boolean(parsed.autoBalance);
+    costs.value = Array.from({ length: rows }, (_, i) =>
+      Array.from({ length: cols }, (_, j) => normalizeNumber(parsed.costs?.[i]?.[j])),
+    );
+    supply.value = Array.from({ length: rows }, (_, i) => normalizeNumber(parsed.supply?.[i]));
+    demand.value = Array.from({ length: cols }, (_, j) => normalizeNumber(parsed.demand?.[j]));
+    result.value = null;
+    statusMessage.value = "Datos importados correctamente.";
+    statusTone.value = "success";
+  } catch (error) {
+    statusMessage.value = "No se pudo importar el archivo. Verifica que sea un JSON valido.";
+    statusTone.value = "error";
+  } finally {
+    event.target.value = "";
+  }
 }
 
 function runNorthwest() {
@@ -543,6 +659,18 @@ function prepareProblem() {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
 }
 
+.btn-help {
+  width: 100%;
+  margin-top: 10px;
+  background: #ecfeff;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.hidden-import-input {
+  display: none;
+}
+
 .checkbox-row {
   display: flex;
   gap: 10px;
@@ -733,6 +861,81 @@ function prepareProblem() {
   font-size: 0.9rem;
 }
 
+.help-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.help-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 24px;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.26);
+}
+
+.help-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.help-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px 24px;
+  overflow-y: auto;
+}
+
+.help-block {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid #dbe4ee;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+}
+
+.help-block h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.help-block p {
+  margin: 0 0 8px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.help-block p:last-child {
+  margin-bottom: 0;
+}
+
+.help-close-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 1100px) {
   .northwest-layout,
   .result-grid {
@@ -759,6 +962,12 @@ function prepareProblem() {
   .field-grid,
   .totals-card {
     grid-template-columns: 1fr;
+  }
+
+  .help-modal-header,
+  .help-modal-body {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 </style>
