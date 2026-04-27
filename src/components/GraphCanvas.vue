@@ -1,7 +1,6 @@
 <template>
   <div class="graph-canvas-container">
     <div ref="canvasRef" class="graph-canvas"></div>
-    
     <!-- Modal de Matriz de Adyacencia -->
     <div v-if="showMatrixPanel" class="matrix-modal-overlay" @click.self="toggleMatrixPanel">
       <div class="matrix-modal">

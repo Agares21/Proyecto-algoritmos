@@ -36,6 +36,16 @@
         <span class="tab-icon">NW</span>
         <span>Esquina Noroeste</span>
       </button>
+
+      <!-- NUEVO BOTÓN para Sort - Ordenamiento -->
+      <button
+        @click="activeTab = 'sort'"
+        :class="{ active: activeTab === 'sort' }"
+        class="tab-btn"
+      >
+        <span class="tab-icon">🔄</span>
+        <span>Sort - Ordenamiento</span>
+      </button>
     </div>
 
     <div v-if="activeTab === 'editor'" class="editor-layout">
@@ -56,6 +66,11 @@
     <div v-else-if="activeTab === 'northwest'" class="northwest-layout">
       <NorthwestView />
     </div>
+
+    <!-- NUEVO CONTENEDOR para Sort - Ordenamiento -->
+    <div v-else-if="activeTab === 'sort'" class="sort-layout">
+      <SortView />
+    </div>
   </div>
 </template>
 
@@ -66,6 +81,7 @@ import GraphCanvas from "../components/GraphCanvas.vue";
 import JohnsonGraph from "../components/JohnsonGraph.vue";
 import AsignacionView from "./AsignacionView.vue";
 import NorthwestView from "./NorthwestView.vue";
+import SortView from "./SortView.vue"; // ← IMPORTAR SortView
 
 const activeTab = ref("editor");
 </script>
@@ -152,6 +168,13 @@ const activeTab = ref("editor");
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #0f766e 0%, #164e63 100%);
+}
+
+/* NUEVO ESTILO para Sort - Ordenamiento */
+.sort-layout {
+  flex: 1;
+  overflow: auto;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
 }
 
 @media (max-width: 768px) {

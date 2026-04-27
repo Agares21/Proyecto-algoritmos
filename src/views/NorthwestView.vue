@@ -1,233 +1,361 @@
 <template>
   <div class="northwest-page">
-    <section class="hero-card">
-      <div>
-        <p class="eyebrow">Metodo de transporte</p>
-        <h2>Algoritmo de la Esquina Noroeste</h2>
-        <p class="hero-copy">
-          Genera una solucion inicial factible a partir de una matriz de costos, oferta y demanda.
-        </p>
+    <!-- Header simplificado -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1>Método de la Esquina Noroeste</h1>
+        <p>Algoritmo de transporte para minimización y maximización</p>
       </div>
-      <div class="hero-badges">
-        <span class="badge">{{ rowCount }} origenes</span>
-        <span class="badge">{{ colCount }} destinos</span>
+      <div class="optimization-badge" :class="optimizationType === 'min' ? 'badge-min' : 'badge-max'">
+        {{ optimizationType === 'min' ? 'Minimizar' : 'Maximizar' }}
       </div>
-    </section>
+    </div>
 
-    <div class="northwest-layout">
-      <section class="panel controls-panel">
-        <h3>Configuracion</h3>
+    <div class="main-layout">
+      <!-- Panel de configuración -->
+      <div class="config-card">
+        <div class="config-header">
+          <h3>Configuración</h3>
+        </div>
 
-        <div class="field-grid">
-          <label class="field">
-            <span>Origenes</span>
-            <input v-model.number="rowCount" type="number" min="1" max="10" />
+        <div class="config-group">
+          <div class="dimension-controls">
+            <div class="dimension-item">
+              <label>Orígenes</label>
+              <div class="number-control">
+                <button @click="decrementRows" class="num-btn">−</button>
+                <span class="num-value">{{ rowCount }}</span>
+                <button @click="incrementRows" class="num-btn">+</button>
+              </div>
+            </div>
+            <div class="dimension-item">
+              <label>Destinos</label>
+              <div class="number-control">
+                <button @click="decrementCols" class="num-btn">−</button>
+                <span class="num-value">{{ colCount }}</span>
+                <button @click="incrementCols" class="num-btn">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="optimization-toggle">
+            <button 
+              @click="optimizationType = 'min'" 
+              class="toggle-btn" 
+              :class="{ active: optimizationType === 'min' }">
+              Minimizar
+            </button>
+            <button 
+              @click="optimizationType = 'max'" 
+              class="toggle-btn" 
+              :class="{ active: optimizationType === 'max' }">
+              Maximizar
+            </button>
+          </div>
+
+          <label class="balance-check">
+            <input type="checkbox" v-model="autoBalance">
+            <span>Balancear automáticamente</span>
           </label>
 
-          <label class="field">
-            <span>Destinos</span>
-            <input v-model.number="colCount" type="number" min="1" max="10" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <button class="btn btn-primary" @click="resizeTable">Actualizar matriz</button>
-          <button class="btn btn-secondary" @click="loadExample">Cargar ejemplo</button>
-          <button class="btn btn-secondary" @click="exportData">Exportar</button>
-          <button class="btn btn-secondary" @click="triggerImport">Importar</button>
-          <button class="btn btn-ghost" @click="resetData">Limpiar</button>
-        </div>
-
-        <label class="checkbox-row">
-          <input v-model="autoBalance" type="checkbox" />
-          <span>Balancear automaticamente si oferta y demanda no coinciden</span>
-        </label>
-
-        <div class="totals-card">
-          <div>
-            <span class="totals-label">Oferta total</span>
-            <strong>{{ totalSupply }}</strong>
+          <div class="totals-display">
+            <div class="total-item">
+              <span class="total-label">Oferta total</span>
+              <span class="total-value supply-total">{{ totalSupply }}</span>
+            </div>
+            <div class="total-item">
+              <span class="total-label">Demanda total</span>
+              <span class="total-value demand-total">{{ totalDemand }}</span>
+            </div>
           </div>
-          <div>
-            <span class="totals-label">Demanda total</span>
-            <strong>{{ totalDemand }}</strong>
+
+          <div class="action-buttons">
+            <button @click="resizeTable" class="btn-outline">Actualizar</button>
+            <button @click="loadExample" class="btn-outline">Ejemplo</button>
+            <button @click="resetData" class="btn-outline">Limpiar</button>
+            <button @click="triggerImport" class="btn-outline">Importar</button>
+            <button @click="exportData" class="btn-outline">Exportar</button>
           </div>
+
+          <button @click="runNorthwest" class="btn-execute" :disabled="isExecuting">
+            <span class="execute-icon">▶</span>
+            {{ isExecuting ? 'Calculando...' : 'Ejecutar Algoritmo' }}
+          </button>
+
+          <!-- Botón de ayuda -->
+          <button @click="showHelpModal = true" class="btn-help">
+            Ayuda
+          </button>
         </div>
 
-        <button class="btn btn-accent" @click="runNorthwest">
-          Ejecutar esquina noroeste
-        </button>
-
-        <button class="btn btn-help" @click="showHelpModal = true">
-          Ayuda
-        </button>
-
-        <input
-          ref="importInputRef"
-          type="file"
-          accept=".json"
-          class="hidden-import-input"
-          @change="importData"
-        />
-
-        <p v-if="statusMessage" class="status" :class="statusTone">
+        <p v-if="statusMessage" class="status-message" :class="statusTone">
           {{ statusMessage }}
         </p>
-      </section>
+      </div>
 
-      <section class="panel matrix-panel">
-        <div class="panel-header">
-          <h3>Matriz de costos</h3>
-          <p>Llena los costos unitarios, la oferta por origen y la demanda por destino.</p>
+      <!-- Matriz principal -->
+      <div class="matrix-card">
+        <div class="matrix-header">
+          <h3>Matriz de Costos / Beneficios</h3>
+          <span class="matrix-hint">Complete los valores en cada celda</span>
         </div>
-
-        <div class="table-wrapper">
-          <table class="matrix-table editable">
+        
+        <div class="matrix-container">
+          <table class="beautiful-table">
             <thead>
               <tr>
                 <th></th>
-                <th v-for="(_, colIndex) in costs[0]" :key="'head-' + colIndex">
-                  D{{ colIndex + 1 }}
+                <th v-for="j in colCount" :key="'d'+j">
+                  <div class="dest-badge">D{{ j }}</div>
                 </th>
-                <th>Oferta</th>
+                <th><div class="supply-badge">OFERTA</div></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, rowIndex) in costs" :key="'row-' + rowIndex">
-                <th>O{{ rowIndex + 1 }}</th>
-                <td v-for="(_, colIndex) in row" :key="'cell-' + rowIndex + '-' + colIndex">
-                  <input
-                    v-model.number="costs[rowIndex][colIndex]"
+              <tr v-for="i in rowCount" :key="'o'+i">
+                <th><div class="origin-badge">O{{ i }}</div></th>
+                <td v-for="j in colCount" :key="'c'+i+j">
+                  <input 
+                    v-model.number="costs[i-1][j-1]" 
                     type="number"
-                    min="0"
-                    class="table-input"
-                  />
+                    class="cost-input"
+                    placeholder="0">
                 </td>
                 <td>
-                  <input
-                    v-model.number="supply[rowIndex]"
+                  <input 
+                    v-model.number="supply[i-1]" 
                     type="number"
-                    min="0"
-                    class="table-input supply-input"
-                  />
+                    class="supply-input"
+                    placeholder="0">
                 </td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <th>Demanda</th>
-                <td v-for="(_, colIndex) in costs[0]" :key="'demand-' + colIndex">
-                  <input
-                    v-model.number="demand[colIndex]"
+                <th>DEMANDA</th>
+                <td v-for="j in colCount" :key="'dem'+j">
+                  <input 
+                    v-model.number="demand[j-1]" 
                     type="number"
-                    min="0"
-                    class="table-input demand-input"
-                  />
+                    class="demand-input"
+                    placeholder="0">
                 </td>
-                <td class="total-cell">{{ totalDemand }}</td>
+                <td class="total-footer">{{ totalDemand }}</td>
               </tr>
             </tfoot>
           </table>
         </div>
-      </section>
+      </div>
     </div>
 
-    <section v-if="result" class="panel result-panel">
-      <div class="result-header">
-        <div>
-          <h3>Solucion inicial</h3>
-          <p>
-            Se asignaron unidades siguiendo la regla de la esquina noroeste,
-            avanzando por filas y columnas segun se agotaba oferta o demanda.
-          </p>
-        </div>
-        <div class="cost-card">
-          <span>Costo total</span>
-          <strong>{{ result.totalCost }}</strong>
-        </div>
-      </div>
-
-      <div class="result-grid">
-        <div class="table-wrapper">
-          <table class="matrix-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th v-for="destination in result.destinations" :key="destination">
-                  {{ destination }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, rowIndex) in result.allocationMatrix" :key="'alloc-' + rowIndex">
-                <th>{{ result.origins[rowIndex] }}</th>
-                <td
-                  v-for="(cell, colIndex) in row"
-                  :key="'alloc-cell-' + rowIndex + '-' + colIndex"
-                  :class="{ allocated: cell > 0 }"
-                >
-                  <span class="allocation">{{ cell }}</span>
-                  <small class="unit-cost">c={{ result.costMatrix[rowIndex][colIndex] }}</small>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="steps-card">
-          <h4>Pasos</h4>
-          <div v-for="(step, index) in result.steps" :key="'step-' + index" class="step-item">
-            <span class="step-index">{{ index + 1 }}</span>
-            <div>
-              <p class="step-title">{{ step.title }}</p>
-              <p class="step-copy">{{ step.description }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
+    <!-- Modal de resultados -->
     <Teleport to="body">
-      <div v-if="showHelpModal" class="help-modal-overlay" @click.self="showHelpModal = false">
-        <div class="help-modal">
-          <div class="help-modal-header">
-            <div>
-              <p class="eyebrow">Guia rapida</p>
-              <h3>Ayuda de esquina noroeste</h3>
+      <div v-if="showResultModal" class="modal-overlay" @click.self="closeModal">
+        <div class="result-modal">
+          <div class="modal-header">
+            <div class="modal-title">
+              <h2>Solución Inicial</h2>
             </div>
-            <button class="help-close-btn" @click="showHelpModal = false" aria-label="Cerrar ayuda">
-              ×
-            </button>
+            <button class="close-modal" @click="closeModal">✕</button>
           </div>
 
-          <div class="help-modal-body">
-            <div class="help-block">
-              <h4>Que hace esta pestaña</h4>
-              <p>
-                Genera una solucion inicial factible para un problema de transporte usando
-                el metodo de la esquina noroeste.
-              </p>
+          <div class="modal-body">
+            <!-- Navegación de pasos -->
+            <div class="steps-navigation">
+              <div class="step-progress">
+                <div class="progress-bar" :style="{ width: ((currentStepIndex + 1) / (result?.stepMatrices.length || 1) * 100) + '%' }"></div>
+              </div>
+              <div class="nav-controls">
+                <button @click="previousStep" :disabled="currentStepIndex <= 0" class="nav-btn">
+                  ◀ Anterior
+                </button>
+                <div class="step-indicator">
+                  <span class="step-current">{{ currentStepIndex + 1 }}</span>
+                  <span class="step-total">/ {{ result?.stepMatrices.length }}</span>
+                </div>
+                <button @click="nextStep" :disabled="currentStepIndex >= (result?.stepMatrices.length || 1) - 1" class="nav-btn">
+                  Siguiente ▶
+                </button>
+                <button @click="resetSteps" class="nav-btn reset-btn">⟳ Reiniciar</button>
+              </div>
             </div>
 
-            <div class="help-block">
-              <h4>Como usarla</h4>
-              <p>1. Define la cantidad de origenes y destinos.</p>
-              <p>2. Completa la matriz de costos, la oferta y la demanda.</p>
-              <p>3. Si lo deseas, activa el balanceo automatico.</p>
-              <p>4. Pulsa `Ejecutar esquina noroeste` para obtener la asignacion inicial.</p>
-            </div>
+            <!-- Layout 50/50 -->
+            <div class="split-layout">
+              <!-- Mitad izquierda: Matriz + Beneficio debajo -->
+              <div class="half-section matrix-section">
+                <div class="section-header">
+                  <h3>Paso {{ currentStepIndex + 1 }}</h3>
+                  <p class="step-description">{{ result?.stepMatrices[currentStepIndex]?.description }}</p>
+                </div>
+                <div class="matrix-wrapper">
+                  <table class="solution-table">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th v-for="j in result?.destinations.length" :key="'s-d'+j">
+                          {{ result?.destinations[j-1] }}
+                        </th>
+                        <th>Oferta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, i) in result?.stepMatrices[currentStepIndex]?.allocation" :key="'s-r'+i">
+                        <th class="origin-col">{{ result?.origins[i] }}</th>
+                        <td 
+                          v-for="(cell, j) in row" 
+                          :key="'s-c'+i+j"
+                          :class="{
+                            'allocated': cell > 0,
+                            'current-highlight': result?.stepMatrices[currentStepIndex]?.currentCell?.row === i && 
+                                                result?.stepMatrices[currentStepIndex]?.currentCell?.col === j
+                          }">
+                          <div class="table-cell">
+                            <span class="alloc-value">{{ cell }}</span>
+                            <span class="cost-value">{{ result?.stepMatrices[currentStepIndex]?.costs[i][j] }}</span>
+                          </div>
+                        </td>
+                        <td class="remaining-value">{{ result?.stepMatrices[currentStepIndex]?.remainingSupply[i] }}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th>Demanda</th>
+                        <td v-for="(_, j) in result?.stepMatrices[currentStepIndex]?.allocation[0]" :key="'s-dm'+j" class="demand-foot">
+                          {{ result?.stepMatrices[currentStepIndex]?.remainingDemand[j] }}
+                        </td>
+                        <td class="total-footer"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                
+                <!-- Beneficio Total debajo de la matriz -->
+                <div class="total-value-under-matrix" :class="optimizationType === 'min' ? 'value-min' : 'value-max'">
+                  <span class="value-label">{{ optimizationType === 'min' ? 'Costo Total' : 'Beneficio Total' }}</span>
+                  <span class="value-number">{{ result?.totalValue.toLocaleString() }}</span>
+                </div>
+                
+                <div v-if="result?.stepMatrices[currentStepIndex]?.mathDetails" class="math-info">
+                  <strong>Operación:</strong> {{ result?.stepMatrices[currentStepIndex]?.mathDetails.operation }}
+                  <div class="math-result">{{ result?.stepMatrices[currentStepIndex]?.mathDetails.result }}</div>
+                </div>
+              </div>
 
-            <div class="help-block">
-              <h4>Importar y exportar</h4>
-              <p>
-                Puedes exportar la configuracion actual a un archivo JSON e importarla despues
-                para continuar trabajando con los mismos datos.
-              </p>
+              <!-- Mitad derecha: Historial -->
+              <div class="half-section timeline-section">
+                <div class="section-header">
+                  <h3>Historial de Pasos</h3>
+                </div>
+                <div class="timeline-container">
+                  <div 
+                    v-for="(step, index) in result?.steps" 
+                    :key="index"
+                    class="timeline-entry"
+                    :class="{ 'active-entry': index === currentStepIndex }"
+                    @click="jumpToStep(index)">
+                    <div class="entry-marker">
+                      <span class="marker-circle">{{ index + 1 }}</span>
+                    </div>
+                    <div class="entry-content">
+                      <h4>{{ step.title }}</h4>
+                      <p>{{ step.description }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button @click="closeModal" class="close-btn">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal de ayuda detallada -->
+    <Teleport to="body">
+      <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
+        <div class="help-modal">
+          <div class="modal-header">
+            <h2>Guía del Algoritmo de la Esquina Noroeste</h2>
+            <button class="close-modal" @click="showHelpModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="help-content-detailed">
+              <div class="help-section">
+                <h3>¿Qué es el método de la esquina noroeste?</h3>
+                <p>Es un algoritmo utilizado para encontrar una solución inicial factible para problemas de transporte. Comienza en la celda superior izquierda (esquina noroeste) de la matriz y asigna la máxima cantidad posible, ajustando ofertas y demandas hasta completar todas las asignaciones.</p>
+              </div>
+
+              <div class="help-section">
+                <h3>Pasos para usar la herramienta:</h3>
+                <div class="steps-list">
+                  <div class="step-detail">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                      <strong>Definir dimensiones:</strong> Establezca el número de orígenes (ofertas) y destinos (demandas) usando los botones + y - en el panel de configuración.
+                    </div>
+                  </div>
+                  <div class="step-detail">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                      <strong>Completar la matriz:</strong> Ingrese los costos unitarios (o beneficios si es maximización) en cada celda. Complete las ofertas en la última columna y las demandas en la última fila.
+                    </div>
+                  </div>
+                  <div class="step-detail">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                      <strong>Seleccionar objetivo:</strong> Elija entre minimizar costo o maximizar beneficio según su problema.
+                    </div>
+                  </div>
+                  <div class="step-detail">
+                    <div class="step-num">4</div>
+                    <div class="step-text">
+                      <strong>Balanceo (opcional):</strong> Active "Balancear automáticamente" si la oferta total no es igual a la demanda total. Esto agregará orígenes o destinos ficticios con costo/beneficio 0.
+                    </div>
+                  </div>
+                  <div class="step-detail">
+                    <div class="step-num">5</div>
+                    <div class="step-text">
+                      <strong>Ejecutar algoritmo:</strong> Presione el botón "Ejecutar Algoritmo" para calcular la solución inicial.
+                    </div>
+                  </div>
+                  <div class="step-detail">
+                    <div class="step-num">6</div>
+                    <div class="step-text">
+                      <strong>Explorar resultados:</strong> En la ventana emergente, navegue paso a paso usando los botones "Anterior" y "Siguiente". Cada paso muestra la asignación realizada y las ofertas/demandas restantes.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="help-section">
+                <h3>Interpretación de resultados:</h3>
+                <ul>
+                  <li><strong>Celdas verdes:</strong> Muestran las asignaciones realizadas</li>
+                  <li><strong>Celdas amarillas con estrella:</strong> Indican la celda que se está asignando en el paso actual</li>
+                  <li><strong>Oferta/Demanda:</strong> Muestran los valores restantes después de cada asignación</li>
+                  <li><strong>Costo/Beneficio total:</strong> Suma total de todas las asignaciones multiplicadas por sus costos/beneficios</li>
+                </ul>
+              </div>
+
+              <div class="help-section">
+                <h3>Ejemplo práctico:</h3>
+                <p>Puede cargar un ejemplo presionando el botón "Ejemplo" en el panel de configuración. Esto cargará una matriz con valores predefinidos para que pueda ver cómo funciona el algoritmo.</p>
+              </div>
+
+              <div class="help-note-box">
+                <strong>Nota importante:</strong> El método de la esquina noroeste no considera los costos/beneficios al hacer las asignaciones, solo proporciona una solución inicial factible. Para optimizarla, se necesitarían métodos adicionales como el método de Stepping Stone o MODI.
+              </div>
             </div>
           </div>
         </div>
       </div>
     </Teleport>
+
+    <input ref="importInputRef" type="file" accept=".json" class="hidden-input" @change="importData">
   </div>
 </template>
 
@@ -240,6 +368,9 @@ const createMatrix = (rows, cols, fill = 0) =>
 const rowCount = ref(3);
 const colCount = ref(4);
 const autoBalance = ref(true);
+const optimizationType = ref('max');
+const isExecuting = ref(false);
+const showResultModal = ref(false);
 const costs = ref([
   [2, 3, 11, 7],
   [1, 0, 6, 1],
@@ -249,9 +380,10 @@ const supply = ref([6, 1, 10]);
 const demand = ref([7, 5, 3, 2]);
 const result = ref(null);
 const statusMessage = ref("");
-const statusTone = ref("neutral");
+const statusTone = ref("");
 const showHelpModal = ref(false);
 const importInputRef = ref(null);
+const currentStepIndex = ref(0);
 
 const totalSupply = computed(() =>
   supply.value.reduce((sum, value) => sum + normalizeNumber(value), 0),
@@ -265,12 +397,37 @@ function normalizeNumber(value) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
-function resizeTable() {
-  const rows = Math.min(Math.max(normalizeNumber(rowCount.value), 1), 10);
-  const cols = Math.min(Math.max(normalizeNumber(colCount.value), 1), 10);
+function incrementRows() {
+  if (rowCount.value < 10) {
+    rowCount.value++;
+    resizeTable();
+  }
+}
 
-  rowCount.value = rows;
-  colCount.value = cols;
+function decrementRows() {
+  if (rowCount.value > 1) {
+    rowCount.value--;
+    resizeTable();
+  }
+}
+
+function incrementCols() {
+  if (colCount.value < 10) {
+    colCount.value++;
+    resizeTable();
+  }
+}
+
+function decrementCols() {
+  if (colCount.value > 1) {
+    colCount.value--;
+    resizeTable();
+  }
+}
+
+function resizeTable() {
+  const rows = rowCount.value;
+  const cols = colCount.value;
 
   const nextCosts = createMatrix(rows, cols);
   for (let i = 0; i < rows; i++) {
@@ -283,13 +440,14 @@ function resizeTable() {
   supply.value = Array.from({ length: rows }, (_, i) => normalizeNumber(supply.value[i]));
   demand.value = Array.from({ length: cols }, (_, j) => normalizeNumber(demand.value[j]));
   result.value = null;
-  statusMessage.value = "Matriz actualizada.";
-  statusTone.value = "neutral";
+  currentStepIndex.value = 0;
+  showStatus("Matriz actualizada", "success");
 }
 
 function loadExample() {
   rowCount.value = 3;
   colCount.value = 4;
+  optimizationType.value = 'max';
   costs.value = [
     [2, 3, 11, 7],
     [1, 0, 6, 1],
@@ -298,8 +456,8 @@ function loadExample() {
   supply.value = [6, 1, 10];
   demand.value = [7, 5, 3, 2];
   result.value = null;
-  statusMessage.value = "Ejemplo cargado.";
-  statusTone.value = "success";
+  currentStepIndex.value = 0;
+  showStatus("Ejemplo cargado", "success");
 }
 
 function resetData() {
@@ -307,8 +465,8 @@ function resetData() {
   supply.value = Array.from({ length: rowCount.value }, () => 0);
   demand.value = Array.from({ length: colCount.value }, () => 0);
   result.value = null;
-  statusMessage.value = "Datos reiniciados.";
-  statusTone.value = "neutral";
+  currentStepIndex.value = 0;
+  showStatus("Datos reiniciados", "neutral");
 }
 
 function triggerImport() {
@@ -320,23 +478,20 @@ function exportData() {
     rowCount: rowCount.value,
     colCount: colCount.value,
     autoBalance: autoBalance.value,
+    optimizationType: optimizationType.value,
     costs: costs.value,
     supply: supply.value,
     demand: demand.value,
   };
 
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: "application/json",
-  });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "northwest-data.json";
+  link.download = "transporte-noroeste.json";
   link.click();
   URL.revokeObjectURL(url);
-
-  statusMessage.value = "Datos exportados correctamente.";
-  statusTone.value = "success";
+  showStatus("Datos exportados", "success");
 }
 
 async function importData(event) {
@@ -346,628 +501,1168 @@ async function importData(event) {
   try {
     const text = await file.text();
     const parsed = JSON.parse(text);
-
-    const rows = Math.min(Math.max(normalizeNumber(parsed.rowCount), 1), 10);
-    const cols = Math.min(Math.max(normalizeNumber(parsed.colCount), 1), 10);
-
-    rowCount.value = rows;
-    colCount.value = cols;
+    rowCount.value = Math.min(Math.max(parsed.rowCount, 1), 10);
+    colCount.value = Math.min(Math.max(parsed.colCount, 1), 10);
     autoBalance.value = Boolean(parsed.autoBalance);
-    costs.value = Array.from({ length: rows }, (_, i) =>
-      Array.from({ length: cols }, (_, j) => normalizeNumber(parsed.costs?.[i]?.[j])),
-    );
-    supply.value = Array.from({ length: rows }, (_, i) => normalizeNumber(parsed.supply?.[i]));
-    demand.value = Array.from({ length: cols }, (_, j) => normalizeNumber(parsed.demand?.[j]));
+    optimizationType.value = parsed.optimizationType === 'max' ? 'max' : 'min';
+    costs.value = parsed.costs || createMatrix(rowCount.value, colCount.value);
+    supply.value = parsed.supply || Array(rowCount.value).fill(0);
+    demand.value = parsed.demand || Array(colCount.value).fill(0);
     result.value = null;
-    statusMessage.value = "Datos importados correctamente.";
-    statusTone.value = "success";
+    showStatus("Datos importados", "success");
   } catch (error) {
-    statusMessage.value = "No se pudo importar el archivo. Verifica que sea un JSON valido.";
-    statusTone.value = "error";
+    showStatus("Error al importar archivo", "error");
   } finally {
     event.target.value = "";
   }
 }
 
-function runNorthwest() {
+function showStatus(msg, tone) {
+  statusMessage.value = msg;
+  statusTone.value = tone;
+  setTimeout(() => {
+    if (statusMessage.value === msg) {
+      statusMessage.value = "";
+    }
+  }, 3000);
+}
+
+function previousStep() {
+  if (currentStepIndex.value > 0) {
+    currentStepIndex.value--;
+  }
+}
+
+function nextStep() {
+  if (result.value && currentStepIndex.value < result.value.stepMatrices.length - 1) {
+    currentStepIndex.value++;
+  }
+}
+
+function resetSteps() {
+  currentStepIndex.value = 0;
+}
+
+function jumpToStep(index) {
+  if (result.value && index >= 0 && index < result.value.stepMatrices.length) {
+    currentStepIndex.value = index;
+  }
+}
+
+function closeModal() {
+  showResultModal.value = false;
+}
+
+async function runNorthwest() {
+  isExecuting.value = true;
+  
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   const prepared = prepareProblem();
   if (!prepared.ok) {
-    statusMessage.value = prepared.message;
-    statusTone.value = "error";
-    result.value = null;
+    showStatus(prepared.message, "error");
+    isExecuting.value = false;
     return;
   }
 
-  const { balancedCosts, balancedSupply, balancedDemand, origins, destinations, notes } =
-    prepared;
+  const { balancedCosts, balancedSupply, balancedDemand, origins, destinations, notes } = prepared;
 
   const allocationMatrix = createMatrix(balancedSupply.length, balancedDemand.length);
   const steps = [...notes];
+  const stepMatrices = [];
   const remainingSupply = [...balancedSupply];
   const remainingDemand = [...balancedDemand];
+  
+  stepMatrices.push({
+    allocation: allocationMatrix.map(row => [...row]),
+    costs: balancedCosts.map(row => [...row]),
+    remainingSupply: [...remainingSupply],
+    remainingDemand: [...remainingDemand],
+    description: "Estado inicial: Comenzamos el algoritmo",
+    currentCell: null,
+    mathDetails: null
+  });
 
-  let i = 0;
-  let j = 0;
+  let i = 0, j = 0;
 
   while (i < remainingSupply.length && j < remainingDemand.length) {
     const amount = Math.min(remainingSupply[i], remainingDemand[j]);
     allocationMatrix[i][j] = amount;
 
+    const operation = `min(${remainingSupply[i]}, ${remainingDemand[j]}) = ${amount}`;
+    const resultText = `Se asignan ${amount} unidades de ${origins[i]} a ${destinations[j]}`;
+    
     steps.push({
-      title: `Asignar ${amount} a ${origins[i]} -> ${destinations[j]}`,
-      description: `Se toma la celda superior izquierda disponible. Oferta restante: ${
-        remainingSupply[i] - amount
-      }, demanda restante: ${remainingDemand[j] - amount}.`,
+      title: `Asignar ${amount} unidades`,
+      description: `${resultText}. Oferta restante: ${remainingSupply[i] - amount}, Demanda restante: ${remainingDemand[j] - amount}.`,
+    });
+
+    stepMatrices.push({
+      allocation: allocationMatrix.map(row => [...row]),
+      costs: balancedCosts.map(row => [...row]),
+      remainingSupply: [...remainingSupply],
+      remainingDemand: [...remainingDemand],
+      description: `${resultText}. Se toma la cantidad mínima entre la oferta disponible (${remainingSupply[i]}) y la demanda disponible (${remainingDemand[j]}).`,
+      currentCell: { row: i, col: j },
+      mathDetails: { operation, result: resultText }
     });
 
     remainingSupply[i] -= amount;
     remainingDemand[j] -= amount;
 
-    const supplyExhausted = remainingSupply[i] === 0;
-    const demandExhausted = remainingDemand[j] === 0;
-
-    if (supplyExhausted && demandExhausted) {
-      i += 1;
-      j += 1;
-    } else if (supplyExhausted) {
-      i += 1;
+    if (remainingSupply[i] === 0 && remainingDemand[j] === 0) {
+      i++;
+      j++;
+    } else if (remainingSupply[i] === 0) {
+      i++;
     } else {
-      j += 1;
+      j++;
     }
   }
 
-  const totalCost = allocationMatrix.reduce(
-    (sum, row, rowIndex) =>
-      sum +
-      row.reduce(
-        (rowSum, allocation, colIndex) =>
-          rowSum + allocation * balancedCosts[rowIndex][colIndex],
-        0,
-      ),
-    0,
-  );
+  let totalValue = 0;
+  for (let rowIndex = 0; rowIndex < allocationMatrix.length; rowIndex++) {
+    for (let colIndex = 0; colIndex < allocationMatrix[rowIndex].length; colIndex++) {
+      totalValue += allocationMatrix[rowIndex][colIndex] * balancedCosts[rowIndex][colIndex];
+    }
+  }
 
   result.value = {
     origins,
     destinations,
     costMatrix: balancedCosts,
     allocationMatrix,
-    totalCost,
+    totalValue,
     steps,
+    stepMatrices,
   };
-  statusMessage.value = "Solucion inicial calculada correctamente.";
-  statusTone.value = "success";
+  
+  currentStepIndex.value = 0;
+  showResultModal.value = true;
+  showStatus("Solución calculada exitosamente", "success");
+  isExecuting.value = false;
 }
 
 function prepareProblem() {
-  resizeTable();
+  const normalizedCosts = costs.value.map(row => row.map(v => normalizeNumber(v)));
+  const normalizedSupply = supply.value.map(v => normalizeNumber(v));
+  const normalizedDemand = demand.value.map(v => normalizeNumber(v));
 
-  const normalizedCosts = costs.value.map((row) => row.map((value) => normalizeNumber(value)));
-  const normalizedSupply = supply.value.map((value) => normalizeNumber(value));
-  const normalizedDemand = demand.value.map((value) => normalizeNumber(value));
-
-  const supplyTotal = normalizedSupply.reduce((sum, value) => sum + value, 0);
-  const demandTotal = normalizedDemand.reduce((sum, value) => sum + value, 0);
+  const supplyTotal = normalizedSupply.reduce((a, b) => a + b, 0);
+  const demandTotal = normalizedDemand.reduce((a, b) => a + b, 0);
 
   if (supplyTotal === 0 || demandTotal === 0) {
-    return {
-      ok: false,
-      message: "La oferta total y la demanda total deben ser mayores que cero.",
-    };
+    return { ok: false, message: "La oferta y demanda deben ser mayores que cero" };
   }
 
-  const balancedCosts = normalizedCosts.map((row) => [...row]);
+  const balancedCosts = normalizedCosts.map(row => [...row]);
   const balancedSupply = [...normalizedSupply];
   const balancedDemand = [...normalizedDemand];
-  const origins = balancedSupply.map((_, index) => `O${index + 1}`);
-  const destinations = balancedDemand.map((_, index) => `D${index + 1}`);
+  const origins = balancedSupply.map((_, i) => `O${i + 1}`);
+  const destinations = balancedDemand.map((_, i) => `D${i + 1}`);
   const notes = [];
 
   if (supplyTotal !== demandTotal) {
     if (!autoBalance.value) {
-      return {
-        ok: false,
-        message: "La oferta total debe coincidir con la demanda total, o activa el balanceo automatico.",
-      };
+      return { ok: false, message: "La oferta y demanda no coinciden. Activa el balanceo automático." };
     }
 
     if (supplyTotal < demandTotal) {
       const extra = demandTotal - supplyTotal;
       balancedSupply.push(extra);
-      balancedCosts.push(Array.from({ length: balancedDemand.length }, () => 0));
+      balancedCosts.push(Array(balancedDemand.length).fill(0));
       origins.push(`O${balancedSupply.length}`);
       notes.push({
-        title: "Balanceo automatico",
-        description: `Se agrego un origen ficticio con oferta ${extra} y costo 0 para equilibrar el problema.`,
+        title: "Balanceo automático",
+        description: `Se agregó origen ficticio con oferta ${extra} y costo 0`
       });
     } else {
       const extra = supplyTotal - demandTotal;
       balancedDemand.push(extra);
-      balancedCosts.forEach((row) => row.push(0));
+      balancedCosts.forEach(row => row.push(0));
       destinations.push(`D${balancedDemand.length}`);
       notes.push({
-        title: "Balanceo automatico",
-        description: `Se agrego un destino ficticio con demanda ${extra} y costo 0 para equilibrar el problema.`,
+        title: "Balanceo automático",
+        description: `Se agregó destino ficticio con demanda ${extra} y costo 0`
       });
     }
   }
 
   notes.unshift({
-    title: "Datos listos",
-    description: `Se trabajara con una matriz de ${balancedSupply.length} x ${balancedDemand.length}.`,
+    title: "Problema balanceado",
+    description: `Matriz de ${balancedSupply.length} × ${balancedDemand.length}`
   });
 
-  return {
-    ok: true,
-    balancedCosts,
-    balancedSupply,
-    balancedDemand,
-    origins,
-    destinations,
-    notes,
-  };
+  return { ok: true, balancedCosts, balancedSupply, balancedDemand, origins, destinations, notes };
 }
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .northwest-page {
-  min-height: 100%;
-  padding: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(45, 212, 191, 0.25), transparent 32%),
-    linear-gradient(180deg, #ecfeff 0%, #f8fafc 55%, #f0fdfa 100%);
-  color: #0f172a;
+  min-height: 100vh;
+  padding: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
 }
 
-.hero-card,
-.panel {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+/* Hero Section */
+.hero-section {
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-}
-
-.hero-card {
-  border-radius: 28px;
-  padding: 28px;
+  border-radius: 32px;
+  padding: 32px 48px;
+  margin-bottom: 32px;
   display: flex;
   justify-content: space-between;
-  gap: 20px;
   align-items: center;
-  margin-bottom: 24px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #0f766e;
-}
-
-.hero-card h2 {
-  margin: 0 0 10px;
-  font-size: 2rem;
-}
-
-.hero-copy {
-  margin: 0;
-  color: #475569;
-  max-width: 620px;
-}
-
-.hero-badges {
-  display: flex;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
-.badge {
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: #ccfbf1;
-  color: #115e59;
-  font-weight: 700;
+.hero-content {
+  flex: 1;
 }
 
-.northwest-layout {
+.hero-content h1 {
+  font-size: 2rem;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-content p {
+  color: #666;
+  margin: 0;
+}
+
+.optimization-badge {
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.badge-min {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.badge-max {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+/* Main Layout */
+.main-layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 320px 1fr;
   gap: 24px;
 }
 
-.panel {
+/* Config Card */
+.config-card {
+  background: white;
   border-radius: 24px;
   padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  position: sticky;
+  top: 24px;
 }
 
-.controls-panel h3,
-.matrix-panel h3,
-.result-panel h3 {
-  margin: 0 0 16px;
-  font-size: 1.15rem;
+.config-header h3 {
+  margin: 0 0 24px 0;
+  font-size: 1.2rem;
+  color: #333;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dimension-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.dimension-item {
+  flex: 1;
+}
+
+.dimension-item label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.number-control {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.field input,
-.table-input {
-  width: 100%;
-  border: 1px solid #cbd5e1;
+  background: #f5f5f5;
   border-radius: 12px;
-  padding: 10px 12px;
-  background: #fff;
-  color: #0f172a;
+  padding: 4px;
 }
 
-.actions {
+.num-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #667eea;
+  transition: all 0.2s;
+}
+
+.num-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.05);
+}
+
+.num-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+}
+
+.optimization-toggle {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 12px;
 }
 
-.btn {
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.toggle-btn.active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.balance-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.totals-display {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  border-radius: 16px;
+}
+
+.total-item {
+  flex: 1;
+  text-align: center;
+}
+
+.total-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.total-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.supply-total {
+  color: #667eea;
+}
+
+.demand-total {
+  color: #f093fb;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-outline {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  border-color: #667eea;
+  background: #f5f7fa;
+  transform: translateY(-2px);
+}
+
+.btn-execute {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
   border: none;
   border-radius: 14px;
-  padding: 12px 16px;
-  font-weight: 700;
+  font-weight: bold;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
+.btn-execute:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #14b8a6, #0f766e);
-  color: #f8fafc;
-  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.2);
-}
-
-.btn-secondary {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.btn-ghost {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-}
-
-.btn-accent {
-  width: 100%;
-  margin-top: 10px;
-  background: linear-gradient(135deg, #0f172a, #164e63);
-  color: #f8fafc;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+.btn-execute:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-help {
   width: 100%;
-  margin-top: 10px;
-  background: #ecfeff;
-  color: #0f766e;
-  border: 1px solid #99f6e4;
-}
-
-.hidden-import-input {
-  display: none;
-}
-
-.checkbox-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font-size: 0.9rem;
-  color: #475569;
-  margin-bottom: 16px;
-}
-
-.totals-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 14px;
-}
-
-.totals-label {
-  display: block;
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
-.status {
-  margin: 14px 0 0;
-  padding: 12px 14px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
   border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #667eea;
+  transition: all 0.2s;
+}
+
+.btn-help:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.execute-icon {
   font-size: 0.9rem;
 }
 
-.status.success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status.neutral {
-  background: #e0f2fe;
-  color: #0c4a6e;
-}
-
-.panel-header p,
-.result-header p {
-  margin: 0;
-  color: #64748b;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.matrix-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 640px;
-}
-
-.matrix-table th,
-.matrix-table td {
-  border: 1px solid #dbe4ee;
-  padding: 10px;
+.status-message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
   text-align: center;
+  font-size: 0.85rem;
+  animation: slideIn 0.3s ease;
 }
 
-.matrix-table th {
-  background: #f8fafc;
-  color: #334155;
+.status-message.success {
+  background: #d4edda;
+  color: #155724;
 }
 
-.editable .matrix-table td,
-.editable td {
-  background: #ffffff;
+.status-message.error {
+  background: #f8d7da;
+  color: #721c24;
 }
 
-.table-input {
-  min-width: 76px;
-  text-align: center;
+.status-message.neutral {
+  background: #e7f3ff;
+  color: #004085;
 }
 
-.total-cell {
-  font-weight: 700;
-  background: #ecfeff;
-  color: #115e59;
+/* Matrix Card */
+.matrix-card {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.result-panel {
-  margin-top: 24px;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-start;
+.matrix-header {
   margin-bottom: 20px;
 }
 
-.cost-card {
-  min-width: 160px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ccfbf1, #99f6e4);
-  color: #134e4a;
+.matrix-header h3 {
+  margin: 0 0 4px 0;
+  color: #333;
 }
 
-.cost-card span {
-  display: block;
-  font-size: 0.82rem;
-  margin-bottom: 6px;
+.matrix-hint {
+  font-size: 0.8rem;
+  color: #999;
 }
 
-.cost-card strong {
+.matrix-container {
+  overflow-x: auto;
+}
+
+.beautiful-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.beautiful-table th,
+.beautiful-table td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: center;
+}
+
+.beautiful-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.origin-badge, .dest-badge {
+  font-weight: bold;
+  color: #667eea;
+}
+
+.supply-badge {
+  font-weight: bold;
+  color: #f093fb;
+}
+
+.cost-input, .supply-input, .demand-input {
+  width: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.cost-input:focus, .supply-input:focus, .demand-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.total-footer {
+  background: #f8f9fa;
+  font-weight: bold;
+  color: #667eea;
+}
+
+/* Modal de Resultados */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.result-modal {
+  background: white;
+  border-radius: 32px;
+  width: 95%;
+  max-width: 1400px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.close-modal {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
   font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.result-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+.close-modal:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
-.allocated {
-  background: #ccfbf1;
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.allocation {
-  display: block;
-  font-weight: 700;
-  color: #115e59;
+.close-btn {
+  padding: 10px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
-.unit-cost {
-  color: #64748b;
+.close-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
 }
 
-.steps-card {
-  border: 1px solid #dbe4ee;
-  border-radius: 20px;
-  padding: 18px;
-  background: #f8fafc;
+/* Steps Navigation */
+.steps-navigation {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 12px 16px;
 }
 
-.steps-card h4 {
-  margin: 0 0 14px;
+.step-progress {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+.nav-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn {
+  padding: 6px 14px;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.reset-btn {
+  background: #f0f0f0;
+}
+
+.step-indicator {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.step-current {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.step-total {
+  color: #999;
+}
+
+/* Split Layout 50/50 */
+.split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.half-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.section-header h3 {
+  margin: 0 0 4px 0;
   font-size: 1rem;
+  color: #333;
 }
 
-.step-item {
+.section-header p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Matrix Section */
+.matrix-section {
+  border-right: 1px solid #e0e0e0;
+  padding-right: 20px;
+}
+
+.matrix-wrapper {
+  overflow-x: auto;
+  flex: 1;
+}
+
+.solution-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.solution-table th,
+.solution-table td {
+  border: 1px solid #e0e0e0;
+  padding: 6px;
+  text-align: center;
+}
+
+.solution-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.origin-col {
+  font-weight: bold;
+  color: #667eea;
+  background: #f8f9fa;
+}
+
+.table-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.alloc-value {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.cost-value {
+  font-size: 0.65rem;
+  color: #999;
+}
+
+.allocated {
+  background: linear-gradient(135deg, #d4fc79, #96e6a1);
+}
+
+.current-highlight {
+  background: linear-gradient(135deg, #ffe259, #ffa751);
+  animation: pulse 0.5s ease;
+  position: relative;
+}
+
+.current-highlight::before {
+  content: '⭐';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.remaining-value, .demand-foot {
+  font-weight: bold;
+  background: #f8f9fa;
+}
+
+/* Total Value debajo de la matriz */
+.total-value-under-matrix {
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.value-min {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.value-max {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+.value-label {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.value-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.math-info {
+  padding: 8px;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.math-result {
+  margin-top: 4px;
+  font-weight: bold;
+  color: #667eea;
+}
+
+/* Timeline Section */
+.timeline-section {
+  padding-left: 20px;
+}
+
+.timeline-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 450px;
+}
+
+.timeline-entry {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  border: 1px solid #e8e8e8;
+}
+
+.timeline-entry:hover {
+  background: #e0e7ff;
+  transform: translateX(4px);
+}
+
+.active-entry {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-left: 3px solid #667eea;
+}
+
+.entry-marker {
+  flex-shrink: 0;
+}
+
+.marker-circle {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.entry-content {
+  flex: 1;
+}
+
+.entry-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.entry-content p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #666;
+  line-height: 1.3;
+}
+
+/* Help Modal Detailed */
+.help-modal {
+  background: white;
+  border-radius: 32px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.help-content-detailed {
+  padding: 8px;
+}
+
+.help-section {
+  margin-bottom: 24px;
+}
+
+.help-section h3 {
+  color: #667eea;
+  font-size: 1.1rem;
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.help-section p {
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-detail {
   display: flex;
   gap: 12px;
   align-items: flex-start;
 }
 
-.step-item + .step-item {
-  margin-top: 14px;
-}
-
-.step-index {
+.step-num {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
-  display: inline-flex;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: #0f766e;
-  color: white;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: bold;
+  font-size: 0.85rem;
   flex-shrink: 0;
 }
 
-.step-title {
-  margin: 0 0 4px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.step-copy {
-  margin: 0;
-  color: #64748b;
+.step-text {
+  flex: 1;
+  color: #555;
+  line-height: 1.5;
   font-size: 0.9rem;
 }
 
-.help-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(6px);
+.step-text strong {
+  color: #333;
 }
 
-.help-modal {
-  width: min(720px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 24px;
-  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.26);
+.help-section ul {
+  margin: 8px 0;
+  padding-left: 20px;
 }
 
-.help-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid #e2e8f0;
+.help-section li {
+  margin: 8px 0;
+  color: #555;
+  line-height: 1.5;
 }
 
-.help-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 22px 24px 24px;
-  overflow-y: auto;
+.help-note-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
-.help-block {
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid #dbe4ee;
-  background: linear-gradient(135deg, #f8fafc, #ffffff);
+.hidden-input {
+  display: none;
 }
 
-.help-block h4 {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
-  color: #0f172a;
-}
-
-.help-block p {
-  margin: 0 0 8px;
-  color: #475569;
-  line-height: 1.6;
-}
-
-.help-block p:last-child {
-  margin-bottom: 0;
-}
-
-.help-close-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 12px;
-  background: #f1f5f9;
-  color: #0f172a;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-@media (max-width: 1100px) {
-  .northwest-layout,
-  .result-grid {
-    grid-template-columns: 1fr;
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .config-card {
+    position: static;
+  }
+  
+  .hero-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .split-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .matrix-section {
+    border-right: none;
+    padding-right: 0;
+  }
+  
+  .timeline-section {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
   .northwest-page {
     padding: 16px;
   }
-
-  .hero-card,
-  .panel {
-    padding: 18px;
-    border-radius: 20px;
+  
+  .hero-section {
+    padding: 24px;
   }
-
-  .hero-card,
-  .result-header {
-    flex-direction: column;
+  
+  .hero-content h1 {
+    font-size: 1.5rem;
   }
-
-  .field-grid,
-  .totals-card {
-    grid-template-columns: 1fr;
+  
+  .nav-controls {
+    flex-wrap: wrap;
   }
-
-  .help-modal-header,
-  .help-modal-body {
-    padding-left: 18px;
-    padding-right: 18px;
+  
+  .result-modal {
+    width: 98%;
+    height: 95vh;
+  }
+  
+  .solution-table {
+    font-size: 0.7rem;
+  }
+  
+  .solution-table th,
+  .solution-table td {
+    padding: 4px;
+  }
+  
+  .total-value-under-matrix {
+    padding: 8px;
+  }
+  
+  .value-number {
+    font-size: 1.2rem;
   }
 }
 </style>
