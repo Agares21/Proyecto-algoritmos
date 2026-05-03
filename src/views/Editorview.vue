@@ -37,7 +37,6 @@
         <span>Esquina Noroeste</span>
       </button>
 
-      <!-- NUEVO BOTÓN para Sort - Ordenamiento -->
       <button
         @click="activeTab = 'sort'"
         :class="{ active: activeTab === 'sort' }"
@@ -45,6 +44,15 @@
       >
         <span class="tab-icon">🔄</span>
         <span>Sort - Ordenamiento</span>
+      </button>
+
+      <button
+        @click="activeTab = 'kruskal'"
+        :class="{ active: activeTab === 'kruskal' }"
+        class="tab-btn"
+      >
+        <span class="tab-icon">🌳</span>
+        <span>Kruskal - MST</span>
       </button>
     </div>
 
@@ -67,9 +75,12 @@
       <NorthwestView />
     </div>
 
-    <!-- NUEVO CONTENEDOR para Sort - Ordenamiento -->
     <div v-else-if="activeTab === 'sort'" class="sort-layout">
       <SortView />
+    </div>
+
+    <div v-else-if="activeTab === 'kruskal'" class="kruskal-layout">
+      <KruskalView />
     </div>
   </div>
 </template>
@@ -81,7 +92,8 @@ import GraphCanvas from "../components/GraphCanvas.vue";
 import JohnsonGraph from "../components/JohnsonGraph.vue";
 import AsignacionView from "./AsignacionView.vue";
 import NorthwestView from "./NorthwestView.vue";
-import SortView from "./SortView.vue"; // ← IMPORTAR SortView
+import SortView from "./SortView.vue";
+import KruskalView from "./KruskalView.vue";
 
 const activeTab = ref("editor");
 </script>
@@ -164,17 +176,25 @@ const activeTab = ref("editor");
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+/* Layout de Esquina Noroeste */
 .northwest-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #0f766e 0%, #164e63 100%);
 }
 
-/* NUEVO ESTILO para Sort - Ordenamiento */
+/* Layout de Sort - Ordenamiento */
 .sort-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+}
+
+/* Layout de Kruskal - Árbol de Expansión Mínima */
+.kruskal-layout {
+  flex: 1;
+  overflow: auto;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
 }
 
 @media (max-width: 768px) {

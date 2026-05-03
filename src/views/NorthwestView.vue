@@ -1,13 +1,13 @@
 <template>
-  <div class="northwest-page">
-    <!-- Header simplificado -->
+  <div class="transport-page">
+    <!-- Header - MISMO DISEÑO QUE LOS OTROS ALGORITMOS -->
     <div class="hero-section">
       <div class="hero-content">
-        <h1>Método de la Esquina Noroeste</h1>
-        <p>Algoritmo de transporte para minimización y maximización</p>
+        <h1>Método de Transporte</h1>
+        <p>Algoritmo de Minimización (Esquina Noroeste) y Maximización (Máxima Contribución)</p>
       </div>
       <div class="optimization-badge" :class="optimizationType === 'min' ? 'badge-min' : 'badge-max'">
-        {{ optimizationType === 'min' ? 'Minimizar' : 'Maximizar' }}
+        {{ optimizationType === 'min' ? 'Minimizar Costo' : 'Maximizar Beneficio' }}
       </div>
     </div>
 
@@ -43,13 +43,13 @@
               @click="optimizationType = 'min'" 
               class="toggle-btn" 
               :class="{ active: optimizationType === 'min' }">
-              Minimizar
+              Minimizar Costo
             </button>
             <button 
               @click="optimizationType = 'max'" 
               class="toggle-btn" 
               :class="{ active: optimizationType === 'max' }">
-              Maximizar
+              Maximizar Beneficio
             </button>
           </div>
 
@@ -74,18 +74,22 @@
             <button @click="loadExample" class="btn-outline">Ejemplo</button>
             <button @click="resetData" class="btn-outline">Limpiar</button>
             <button @click="triggerImport" class="btn-outline">Importar</button>
-            <button @click="exportData" class="btn-outline">Exportar</button>
+            <div class="export-group">
+              <input 
+                type="text" 
+                v-model="exportFileName" 
+                class="export-name-input" 
+                placeholder="nombre_archivo">
+              <button @click="exportData" class="btn-outline export-btn">Exportar</button>
+            </div>
           </div>
 
-          <button @click="runNorthwest" class="btn-execute" :disabled="isExecuting">
+          <button @click="runAlgorithm" class="btn-execute" :disabled="isExecuting">
             <span class="execute-icon">▶</span>
             {{ isExecuting ? 'Calculando...' : 'Ejecutar Algoritmo' }}
           </button>
 
-          <!-- Botón de ayuda -->
-          <button @click="showHelpModal = true" class="btn-help">
-            Ayuda
-          </button>
+          <button @click="showHelpModal = true" class="btn-help">Ayuda</button>
         </div>
 
         <p v-if="statusMessage" class="status-message" :class="statusTone">
@@ -96,7 +100,7 @@
       <!-- Matriz principal -->
       <div class="matrix-card">
         <div class="matrix-header">
-          <h3>Matriz de Costos / Beneficios</h3>
+          <h3>Matriz de {{ optimizationType === 'min' ? 'Costos' : 'Beneficios' }}</h3>
           <span class="matrix-hint">Complete los valores en cada celda</span>
         </div>
         
@@ -154,35 +158,28 @@
         <div class="result-modal">
           <div class="modal-header">
             <div class="modal-title">
-              <h2>Solución Inicial</h2>
+              <h2>Solución - {{ optimizationType === 'min' ? 'Minimización' : 'Maximización' }}</h2>
             </div>
             <button class="close-modal" @click="closeModal">✕</button>
           </div>
 
           <div class="modal-body">
-            <!-- Navegación de pasos -->
             <div class="steps-navigation">
               <div class="step-progress">
                 <div class="progress-bar" :style="{ width: ((currentStepIndex + 1) / (result?.stepMatrices.length || 1) * 100) + '%' }"></div>
               </div>
               <div class="nav-controls">
-                <button @click="previousStep" :disabled="currentStepIndex <= 0" class="nav-btn">
-                  ◀ Anterior
-                </button>
+                <button @click="previousStep" :disabled="currentStepIndex <= 0" class="nav-btn">◀ Anterior</button>
                 <div class="step-indicator">
                   <span class="step-current">{{ currentStepIndex + 1 }}</span>
                   <span class="step-total">/ {{ result?.stepMatrices.length }}</span>
                 </div>
-                <button @click="nextStep" :disabled="currentStepIndex >= (result?.stepMatrices.length || 1) - 1" class="nav-btn">
-                  Siguiente ▶
-                </button>
+                <button @click="nextStep" :disabled="currentStepIndex >= (result?.stepMatrices.length || 1) - 1" class="nav-btn">Siguiente ▶</button>
                 <button @click="resetSteps" class="nav-btn reset-btn">⟳ Reiniciar</button>
               </div>
             </div>
 
-            <!-- Layout 50/50 -->
             <div class="split-layout">
-              <!-- Mitad izquierda: Matriz + Beneficio debajo -->
               <div class="half-section matrix-section">
                 <div class="section-header">
                   <h3>Paso {{ currentStepIndex + 1 }}</h3>
@@ -193,9 +190,7 @@
                     <thead>
                       <tr>
                         <th></th>
-                        <th v-for="j in result?.destinations.length" :key="'s-d'+j">
-                          {{ result?.destinations[j-1] }}
-                        </th>
+                        <th v-for="j in result?.destinations.length" :key="'s-d'+j">{{ result?.destinations[j-1] }}</th>
                         <th>Oferta</th>
                       </tr>
                     </thead>
@@ -230,7 +225,6 @@
                   </table>
                 </div>
                 
-                <!-- Beneficio Total debajo de la matriz -->
                 <div class="total-value-under-matrix" :class="optimizationType === 'min' ? 'value-min' : 'value-max'">
                   <span class="value-label">{{ optimizationType === 'min' ? 'Costo Total' : 'Beneficio Total' }}</span>
                   <span class="value-number">{{ result?.totalValue.toLocaleString() }}</span>
@@ -242,7 +236,6 @@
                 </div>
               </div>
 
-              <!-- Mitad derecha: Historial -->
               <div class="half-section timeline-section">
                 <div class="section-header">
                   <h3>Historial de Pasos</h3>
@@ -274,80 +267,34 @@
       </div>
     </Teleport>
 
-    <!-- Modal de ayuda detallada -->
+    <!-- Modal de ayuda -->
     <Teleport to="body">
       <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
         <div class="help-modal">
           <div class="modal-header">
-            <h2>Guía del Algoritmo de la Esquina Noroeste</h2>
+            <h2>Guía del Algoritmo de Transporte</h2>
             <button class="close-modal" @click="showHelpModal = false">✕</button>
           </div>
           <div class="modal-body">
             <div class="help-content-detailed">
               <div class="help-section">
-                <h3>¿Qué es el método de la esquina noroeste?</h3>
-                <p>Es un algoritmo utilizado para encontrar una solución inicial factible para problemas de transporte. Comienza en la celda superior izquierda (esquina noroeste) de la matriz y asigna la máxima cantidad posible, ajustando ofertas y demandas hasta completar todas las asignaciones.</p>
-              </div>
-
-              <div class="help-section">
-                <h3>Pasos para usar la herramienta:</h3>
-                <div class="steps-list">
-                  <div class="step-detail">
-                    <div class="step-num">1</div>
-                    <div class="step-text">
-                      <strong>Definir dimensiones:</strong> Establezca el número de orígenes (ofertas) y destinos (demandas) usando los botones + y - en el panel de configuración.
-                    </div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">2</div>
-                    <div class="step-text">
-                      <strong>Completar la matriz:</strong> Ingrese los costos unitarios (o beneficios si es maximización) en cada celda. Complete las ofertas en la última columna y las demandas en la última fila.
-                    </div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">3</div>
-                    <div class="step-text">
-                      <strong>Seleccionar objetivo:</strong> Elija entre minimizar costo o maximizar beneficio según su problema.
-                    </div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">4</div>
-                    <div class="step-text">
-                      <strong>Balanceo (opcional):</strong> Active "Balancear automáticamente" si la oferta total no es igual a la demanda total. Esto agregará orígenes o destinos ficticios con costo/beneficio 0.
-                    </div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">5</div>
-                    <div class="step-text">
-                      <strong>Ejecutar algoritmo:</strong> Presione el botón "Ejecutar Algoritmo" para calcular la solución inicial.
-                    </div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">6</div>
-                    <div class="step-text">
-                      <strong>Explorar resultados:</strong> En la ventana emergente, navegue paso a paso usando los botones "Anterior" y "Siguiente". Cada paso muestra la asignación realizada y las ofertas/demandas restantes.
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="help-section">
-                <h3>Interpretación de resultados:</h3>
+                <h3>Minimización vs Maximización</h3>
                 <ul>
-                  <li><strong>Celdas verdes:</strong> Muestran las asignaciones realizadas</li>
-                  <li><strong>Celdas amarillas con estrella:</strong> Indican la celda que se está asignando en el paso actual</li>
-                  <li><strong>Oferta/Demanda:</strong> Muestran los valores restantes después de cada asignación</li>
-                  <li><strong>Costo/Beneficio total:</strong> Suma total de todas las asignaciones multiplicadas por sus costos/beneficios</li>
+                  <li><strong>Minimizar Costo:</strong> Usa el método de la Esquina Noroeste - comienza en la celda (0,0) y asigna sin considerar costos.</li>
+                  <li><strong>Maximizar Beneficio:</strong> Usa el método de Máxima Contribución - elige la celda con mayor beneficio en cada paso.</li>
                 </ul>
               </div>
-
               <div class="help-section">
-                <h3>Ejemplo práctico:</h3>
-                <p>Puede cargar un ejemplo presionando el botón "Ejemplo" en el panel de configuración. Esto cargará una matriz con valores predefinidos para que pueda ver cómo funciona el algoritmo.</p>
+                <h3>Pasos para usar</h3>
+                <div class="steps-list">
+                  <div class="step-detail"><div class="step-num">1</div><div class="step-text"><strong>Definir dimensiones:</strong> Establezca orígenes y destinos</div></div>
+                  <div class="step-detail"><div class="step-num">2</div><div class="step-text"><strong>Completar matriz:</strong> Ingrese costos o beneficios</div></div>
+                  <div class="step-detail"><div class="step-num">3</div><div class="step-text"><strong>Seleccionar objetivo:</strong> Minimizar o Maximizar</div></div>
+                  <div class="step-detail"><div class="step-num">4</div><div class="step-text"><strong>Ejecutar:</strong> Presione el botón para calcular</div></div>
+                </div>
               </div>
-
               <div class="help-note-box">
-                <strong>Nota importante:</strong> El método de la esquina noroeste no considera los costos/beneficios al hacer las asignaciones, solo proporciona una solución inicial factible. Para optimizarla, se necesitarían métodos adicionales como el método de Stepping Stone o MODI.
+                <strong>Nota:</strong> Maximización usa el criterio de mayor beneficio primero, no la esquina noroeste.
               </div>
             </div>
           </div>
@@ -368,7 +315,7 @@ const createMatrix = (rows, cols, fill = 0) =>
 const rowCount = ref(3);
 const colCount = ref(4);
 const autoBalance = ref(true);
-const optimizationType = ref('max');
+const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showResultModal = ref(false);
 const costs = ref([
@@ -384,6 +331,7 @@ const statusTone = ref("");
 const showHelpModal = ref(false);
 const importInputRef = ref(null);
 const currentStepIndex = ref(0);
+const exportFileName = ref("transporte");
 
 const totalSupply = computed(() =>
   supply.value.reduce((sum, value) => sum + normalizeNumber(value), 0),
@@ -447,7 +395,7 @@ function resizeTable() {
 function loadExample() {
   rowCount.value = 3;
   colCount.value = 4;
-  optimizationType.value = 'max';
+  optimizationType.value = 'min';
   costs.value = [
     [2, 3, 11, 7],
     [1, 0, 6, 1],
@@ -482,16 +430,18 @@ function exportData() {
     costs: costs.value,
     supply: supply.value,
     demand: demand.value,
+    exportDate: new Date().toISOString(),
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "transporte-noroeste.json";
+  const fileName = exportFileName.value.trim() || "transporte";
+  link.download = `${fileName}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  showStatus("Datos exportados", "success");
+  showStatus(`Datos exportados como ${fileName}.json`, "success");
 }
 
 async function importData(event) {
@@ -508,6 +458,10 @@ async function importData(event) {
     costs.value = parsed.costs || createMatrix(rowCount.value, colCount.value);
     supply.value = parsed.supply || Array(rowCount.value).fill(0);
     demand.value = parsed.demand || Array(colCount.value).fill(0);
+    
+    const baseName = file.name.replace('.json', '');
+    exportFileName.value = baseName;
+    
     result.value = null;
     showStatus("Datos importados", "success");
   } catch (error) {
@@ -553,7 +507,7 @@ function closeModal() {
   showResultModal.value = false;
 }
 
-async function runNorthwest() {
+async function runAlgorithm() {
   isExecuting.value = true;
   
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -573,57 +527,129 @@ async function runNorthwest() {
   const remainingSupply = [...balancedSupply];
   const remainingDemand = [...balancedDemand];
   
-  stepMatrices.push({
-    allocation: allocationMatrix.map(row => [...row]),
-    costs: balancedCosts.map(row => [...row]),
-    remainingSupply: [...remainingSupply],
-    remainingDemand: [...remainingDemand],
-    description: "Estado inicial: Comenzamos el algoritmo",
-    currentCell: null,
-    mathDetails: null
-  });
-
-  let i = 0, j = 0;
-
-  while (i < remainingSupply.length && j < remainingDemand.length) {
-    const amount = Math.min(remainingSupply[i], remainingDemand[j]);
-    allocationMatrix[i][j] = amount;
-
-    const operation = `min(${remainingSupply[i]}, ${remainingDemand[j]}) = ${amount}`;
-    const resultText = `Se asignan ${amount} unidades de ${origins[i]} a ${destinations[j]}`;
-    
-    steps.push({
-      title: `Asignar ${amount} unidades`,
-      description: `${resultText}. Oferta restante: ${remainingSupply[i] - amount}, Demanda restante: ${remainingDemand[j] - amount}.`,
-    });
-
+  if (optimizationType.value === 'min') {
     stepMatrices.push({
       allocation: allocationMatrix.map(row => [...row]),
       costs: balancedCosts.map(row => [...row]),
       remainingSupply: [...remainingSupply],
       remainingDemand: [...remainingDemand],
-      description: `${resultText}. Se toma la cantidad mínima entre la oferta disponible (${remainingSupply[i]}) y la demanda disponible (${remainingDemand[j]}).`,
-      currentCell: { row: i, col: j },
-      mathDetails: { operation, result: resultText }
+      description: "Estado inicial: Comenzamos el algoritmo desde la esquina superior izquierda",
+      currentCell: null,
+      mathDetails: null
     });
 
-    remainingSupply[i] -= amount;
-    remainingDemand[j] -= amount;
+    let i = 0, j = 0;
 
-    if (remainingSupply[i] === 0 && remainingDemand[j] === 0) {
-      i++;
-      j++;
-    } else if (remainingSupply[i] === 0) {
-      i++;
-    } else {
-      j++;
+    while (i < remainingSupply.length && j < remainingDemand.length) {
+      const amount = Math.min(remainingSupply[i], remainingDemand[j]);
+      allocationMatrix[i][j] = amount;
+
+      const operation = `min(${remainingSupply[i]}, ${remainingDemand[j]}) = ${amount}`;
+      const resultText = `Se asignan ${amount} unidades de ${origins[i]} a ${destinations[j]} (costo unitario: ${balancedCosts[i][j]})`;
+      
+      steps.push({
+        title: `Asignar ${amount} unidades`,
+        description: `${resultText}. Oferta restante: ${remainingSupply[i] - amount}, Demanda restante: ${remainingDemand[j] - amount}.`,
+      });
+
+      stepMatrices.push({
+        allocation: allocationMatrix.map(row => [...row]),
+        costs: balancedCosts.map(row => [...row]),
+        remainingSupply: [...remainingSupply],
+        remainingDemand: [...remainingDemand],
+        description: `${resultText}. Se toma la cantidad mínima entre la oferta disponible y la demanda disponible.`,
+        currentCell: { row: i, col: j },
+        mathDetails: { operation, result: resultText }
+      });
+
+      remainingSupply[i] -= amount;
+      remainingDemand[j] -= amount;
+
+      if (remainingSupply[i] === 0 && remainingDemand[j] === 0) {
+        i++;
+        j++;
+      } else if (remainingSupply[i] === 0) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+  } else {
+    stepMatrices.push({
+      allocation: allocationMatrix.map(row => [...row]),
+      costs: balancedCosts.map(row => [...row]),
+      remainingSupply: [...remainingSupply],
+      remainingDemand: [...remainingDemand],
+      description: "Estado inicial: Comenzamos asignando en la celda con MAYOR beneficio",
+      currentCell: null,
+      mathDetails: null
+    });
+
+    let stepNumber = 1;
+    
+    while (true) {
+      let supplyRemaining = false;
+      let demandRemaining = false;
+      
+      for (let i = 0; i < remainingSupply.length; i++) {
+        if (remainingSupply[i] > 0) supplyRemaining = true;
+      }
+      for (let j = 0; j < remainingDemand.length; j++) {
+        if (remainingDemand[j] > 0) demandRemaining = true;
+      }
+      
+      if (!supplyRemaining || !demandRemaining) break;
+      
+      let maxBenefit = -Infinity;
+      let maxI = -1, maxJ = -1;
+      
+      for (let i = 0; i < remainingSupply.length; i++) {
+        if (remainingSupply[i] === 0) continue;
+        for (let j = 0; j < remainingDemand.length; j++) {
+          if (remainingDemand[j] === 0) continue;
+          if (balancedCosts[i][j] > maxBenefit) {
+            maxBenefit = balancedCosts[i][j];
+            maxI = i;
+            maxJ = j;
+          }
+        }
+      }
+      
+      if (maxI === -1) break;
+      
+      const amount = Math.min(remainingSupply[maxI], remainingDemand[maxJ]);
+      allocationMatrix[maxI][maxJ] = amount;
+      
+      const operation = `min(${remainingSupply[maxI]}, ${remainingDemand[maxJ]}) = ${amount}`;
+      const resultText = `Se asignan ${amount} unidades de ${origins[maxI]} a ${destinations[maxJ]} (beneficio unitario: ${maxBenefit})`;
+      
+      steps.push({
+        title: `Paso ${stepNumber}: Asignar ${amount} unidades (máximo beneficio)`,
+        description: `${resultText}. Oferta restante: ${remainingSupply[maxI] - amount}, Demanda restante: ${remainingDemand[maxJ] - amount}.`
+      });
+      
+      stepMatrices.push({
+        allocation: allocationMatrix.map(row => [...row]),
+        costs: balancedCosts.map(row => [...row]),
+        remainingSupply: [...remainingSupply],
+        remainingDemand: [...remainingDemand],
+        description: `${resultText}. Se selecciona la celda con mayor beneficio (${maxBenefit}) entre las disponibles.`,
+        currentCell: { row: maxI, col: maxJ },
+        mathDetails: { operation, result: resultText }
+      });
+      
+      remainingSupply[maxI] -= amount;
+      remainingDemand[maxJ] -= amount;
+      stepNumber++;
     }
   }
 
   let totalValue = 0;
   for (let rowIndex = 0; rowIndex < allocationMatrix.length; rowIndex++) {
     for (let colIndex = 0; colIndex < allocationMatrix[rowIndex].length; colIndex++) {
-      totalValue += allocationMatrix[rowIndex][colIndex] * balancedCosts[rowIndex][colIndex];
+      const alloc = allocationMatrix[rowIndex][colIndex];
+      const value = balancedCosts[rowIndex][colIndex];
+      totalValue += alloc * value;
     }
   }
 
@@ -639,7 +665,8 @@ async function runNorthwest() {
   
   currentStepIndex.value = 0;
   showResultModal.value = true;
-  showStatus("Solución calculada exitosamente", "success");
+  const typeText = optimizationType.value === 'min' ? 'costo' : 'beneficio';
+  showStatus(`Solución calculada exitosamente (${typeText} total: ${totalValue})`, "success");
   isExecuting.value = false;
 }
 
@@ -702,14 +729,14 @@ function prepareProblem() {
   box-sizing: border-box;
 }
 
-.northwest-page {
+.transport-page {
   min-height: 100vh;
   padding: 32px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
 }
 
-/* Hero Section */
+/* Hero Section - MISMO ESTILO QUE ASIGNACIÓN */
 .hero-section {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -743,26 +770,25 @@ function prepareProblem() {
 }
 
 .optimization-badge {
-  padding: 12px 24px;
-  border-radius: 16px;
+  padding: 12px 28px;
+  border-radius: 40px;
   font-weight: bold;
   font-size: 1rem;
+  color: white;
 }
 
 .badge-min {
   background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
 }
 
 .badge-max {
   background: linear-gradient(135deg, #f093fb, #f5576c);
-  color: white;
 }
 
 /* Main Layout */
 .main-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: 24px;
 }
 
@@ -915,7 +941,7 @@ function prepareProblem() {
 
 .btn-outline {
   flex: 1;
-  min-width: 80px;
+  min-width: 70px;
   padding: 8px 12px;
   border: 1px solid #ddd;
   background: white;
@@ -931,15 +957,41 @@ function prepareProblem() {
   transform: translateY(-2px);
 }
 
+.export-group {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.export-name-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.export-name-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.export-btn {
+  flex-shrink: 0;
+}
+
 .btn-execute {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
-  border-radius: 14px;
-  font-weight: bold;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -950,7 +1002,7 @@ function prepareProblem() {
 
 .btn-execute:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
 .btn-execute:disabled {
@@ -960,14 +1012,15 @@ function prepareProblem() {
 
 .btn-help {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   background: #f8f9fa;
   border: 1px solid #ddd;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
   color: #667eea;
   transition: all 0.2s;
+  margin-top: 8px;
 }
 
 .btn-help:hover {
@@ -983,10 +1036,10 @@ function prepareProblem() {
 
 .status-message {
   margin-top: 16px;
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   animation: slideIn 0.3s ease;
 }
 
@@ -1080,7 +1133,7 @@ function prepareProblem() {
   color: #667eea;
 }
 
-/* Modal de Resultados */
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1114,14 +1167,8 @@ function prepareProblem() {
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
@@ -1190,7 +1237,6 @@ function prepareProblem() {
   transform: translateY(-2px);
 }
 
-/* Steps Navigation */
 .steps-navigation {
   background: #f8f9fa;
   border-radius: 16px;
@@ -1216,6 +1262,7 @@ function prepareProblem() {
   justify-content: center;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .nav-btn {
@@ -1258,7 +1305,6 @@ function prepareProblem() {
   color: #999;
 }
 
-/* Split Layout 50/50 */
 .split-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1285,7 +1331,6 @@ function prepareProblem() {
   color: #666;
 }
 
-/* Matrix Section */
 .matrix-section {
   border-right: 1px solid #e0e0e0;
   padding-right: 20px;
@@ -1366,7 +1411,6 @@ function prepareProblem() {
   background: #f8f9fa;
 }
 
-/* Total Value debajo de la matriz */
 .total-value-under-matrix {
   padding: 12px;
   border-radius: 12px;
@@ -1410,7 +1454,6 @@ function prepareProblem() {
   color: #667eea;
 }
 
-/* Timeline Section */
 .timeline-section {
   padding-left: 20px;
 }
@@ -1479,7 +1522,6 @@ function prepareProblem() {
   line-height: 1.3;
 }
 
-/* Help Modal Detailed */
 .help-modal {
   background: white;
   border-radius: 32px;
@@ -1491,14 +1533,8 @@ function prepareProblem() {
 }
 
 @keyframes modalSlideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .help-content-detailed {
@@ -1587,82 +1623,52 @@ function prepareProblem() {
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
   }
-  
   .config-card {
     position: static;
   }
-  
   .hero-section {
     flex-direction: column;
     text-align: center;
   }
-  
   .split-layout {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
-  
   .matrix-section {
     border-right: none;
     padding-right: 0;
   }
-  
   .timeline-section {
     padding-left: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .northwest-page {
+  .transport-page {
     padding: 16px;
   }
-  
   .hero-section {
     padding: 24px;
   }
-  
   .hero-content h1 {
     font-size: 1.5rem;
   }
-  
-  .nav-controls {
-    flex-wrap: wrap;
-  }
-  
   .result-modal {
     width: 98%;
     height: 95vh;
   }
-  
-  .solution-table {
-    font-size: 0.7rem;
+  .export-group {
+    flex-direction: column;
   }
-  
-  .solution-table th,
-  .solution-table td {
-    padding: 4px;
-  }
-  
-  .total-value-under-matrix {
-    padding: 8px;
-  }
-  
-  .value-number {
-    font-size: 1.2rem;
+  .export-name-input {
+    width: 100%;
   }
 }
 </style>

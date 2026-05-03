@@ -28,6 +28,26 @@
             </div>
           </div>
 
+          <!-- Rango de valores -->
+          <div class="range-group">
+            <div class="range-item">
+              <label>Límite Inferior</label>
+              <div class="number-control">
+                <button @click="decrementLowerLimit" class="num-btn">−</button>
+                <span class="num-value">{{ lowerLimit }}</span>
+                <button @click="incrementLowerLimit" class="num-btn">+</button>
+              </div>
+            </div>
+            <div class="range-item">
+              <label>Límite Superior</label>
+              <div class="number-control">
+                <button @click="decrementUpperLimit" class="num-btn">−</button>
+                <span class="num-value">{{ upperLimit }}</span>
+                <button @click="incrementUpperLimit" class="num-btn">+</button>
+              </div>
+            </div>
+          </div>
+
           <div class="algorithm-selector">
             <button 
               @click="selectedAlgorithm = 'bubble'" 
@@ -62,14 +82,46 @@
             <button @click="generatePartialArray" class="btn-outline">⚠ Parcial</button>
           </div>
 
-          <button @click="startSorting" class="btn-execute" :disabled="isSorting">
-            <span class="execute-icon">▶</span>
-            {{ isSorting ? 'Ordenando...' : 'Iniciar Ordenamiento' }}
-          </button>
+          <!-- Sección de Importar/Exportar -->
+          <div class="import-export-section">
+            <div class="file-name-input">
+              <label>Nombre del archivo</label>
+              <input 
+                type="text" 
+                v-model="fileName" 
+                class="file-name-field"
+                placeholder="mi_arreglo">
+            </div>
+            <div class="import-export-buttons">
+              <button @click="exportData" class="btn-export">
+                📤 Exportar
+              </button>
+              <label class="btn-import">
+                📥 Importar
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  @change="importData" 
+                  style="display: none">
+              </label>
+            </div>
+          </div>
 
-          <button @click="resetArray" class="btn-reset">
-            ⟳ Reiniciar
-          </button>
+          <!-- Botones de acción principales -->
+          <div class="main-action-buttons">
+            <button @click="startSorting" class="btn-execute" :disabled="isSorting">
+              <span class="execute-icon">▶</span>
+              {{ isSorting ? 'Ordenando...' : 'Iniciar Ordenamiento' }}
+            </button>
+
+            <button @click="clearAll" class="btn-clear">
+              🗑️ Limpiar Todo
+            </button>
+
+            <button @click="resetArray" class="btn-reset">
+              ⟳ Reiniciar
+            </button>
+          </div>
 
           <!-- Botón de ayuda -->
           <button @click="showHelpModal = true" class="btn-help">
@@ -97,28 +149,33 @@
         </p>
       </div>
 
-      <!-- Visualización del arreglo -->
+      <!-- Visualización del arreglo con cuadrados -->
       <div class="visualization-card">
         <div class="visualization-header">
           <h3>Visualización del Arreglo</h3>
-          <span class="array-hint">{{ array.length }} elementos</span>
+          <span class="array-hint">{{ array.length }} elementos | Rango: {{ lowerLimit }} - {{ upperLimit }}</span>
         </div>
         
-        <div class="array-container">
+        <div class="squares-container">
           <div 
             v-for="(value, index) in array" 
             :key="index"
-            class="array-bar"
-            :style="{
-              height: `${(value / maxValue) * 100}%`,
-              backgroundColor: getBarColor(index)
-            }"
+            class="array-square-wrapper"
             :class="{ 
               'comparing': comparingIndices.includes(index),
               'swapping': swappingIndices.includes(index),
               'sorted': sortedIndices.includes(index)
             }">
-            <span class="bar-value">{{ value }}</span>
+            <div 
+              class="array-square"
+              :style="{
+                width: getSquareSize(value) + 'px',
+                height: getSquareSize(value) + 'px',
+                backgroundColor: getBarColor(index)
+              }">
+              <span class="square-value">{{ value }}</span>
+            </div>
+            <div class="square-index">{{ index }}</div>
           </div>
         </div>
 
@@ -143,102 +200,7 @@
       </div>
     </div>
 
-    <!-- Modal de resultados con 50/50 -->
-    <Teleport to="body">
-      <div v-if="showResultModal" class="modal-overlay" @click.self="closeModal">
-        <div class="result-modal">
-          <div class="modal-header">
-            <div class="modal-title">
-              <h2>Resultado del Ordenamiento</h2>
-            </div>
-            <button class="close-modal" @click="closeModal">✕</button>
-          </div>
-
-          <div class="modal-body">
-            <!-- Resumen del ordenamiento -->
-            <div class="summary-card" :class="getAlgorithmClass()">
-              <div class="summary-stats">
-                <div class="summary-stat">
-                  <span class="stat-label">Algoritmo</span>
-                  <span class="stat-value">{{ getAlgorithmName() }}</span>
-                </div>
-                <div class="summary-stat">
-                  <span class="stat-label">Tamaño</span>
-                  <span class="stat-value">{{ arraySize }}</span>
-                </div>
-                <div class="summary-stat">
-                  <span class="stat-label">Comparaciones</span>
-                  <span class="stat-value">{{ comparisons }}</span>
-                </div>
-                <div class="summary-stat">
-                  <span class="stat-label">Intercambios</span>
-                  <span class="stat-value">{{ swaps }}</span>
-                </div>
-                <div class="summary-stat">
-                  <span class="stat-label">Tiempo</span>
-                  <span class="stat-value">{{ executionTime }}ms</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Layout 50/50 -->
-            <div class="split-layout">
-              <!-- Mitad izquierda: Arreglo ordenado -->
-              <div class="half-section array-section">
-                <div class="section-header">
-                  <h3>Arreglo Ordenado</h3>
-                  <p class="step-description">El arreglo ha sido ordenado de forma {{ isAscending ? 'ascendente' : 'descendente' }}</p>
-                </div>
-                <div class="sorted-array-container">
-                  <div 
-                    v-for="(value, index) in sortedArray" 
-                    :key="index"
-                    class="sorted-bar"
-                    :style="{
-                      height: `${(value / maxValue) * 100}%`,
-                      backgroundColor: '#10b981'
-                    }">
-                    <span class="bar-value">{{ value }}</span>
-                  </div>
-                </div>
-                <div class="array-values">
-                  [{{ sortedArray.join(', ') }}]
-                </div>
-              </div>
-
-              <!-- Mitad derecha: Historial de pasos -->
-              <div class="half-section timeline-section">
-                <div class="section-header">
-                  <h3>Historial de Pasos</h3>
-                </div>
-                <div class="timeline-container">
-                  <div 
-                    v-for="(step, index) in steps" 
-                    :key="index"
-                    class="timeline-entry"
-                    :class="{ 'active-entry': index === currentStepIndex }"
-                    @click="jumpToStep(index)">
-                    <div class="entry-marker">
-                      <span class="marker-circle">{{ index + 1 }}</span>
-                    </div>
-                    <div class="entry-content">
-                      <h4>{{ step.title }}</h4>
-                      <p>{{ step.description }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button @click="closeModal" class="close-btn">Cerrar</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Modal de ayuda detallada -->
+    <!-- Modal de ayuda -->
     <Teleport to="body">
       <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
         <div class="help-modal">
@@ -250,7 +212,7 @@
             <div class="help-content-detailed">
               <div class="help-section">
                 <h3>¿Qué son los algoritmos de ordenamiento?</h3>
-                <p>Los algoritmos de ordenamiento son métodos para reorganizar los elementos de una lista o arreglo en un orden específico (generalmente ascendente o descendente). Son fundamentales en ciencias de la computación por su eficiencia y aplicaciones prácticas.</p>
+                <p>Los algoritmos de ordenamiento son métodos para reorganizar los elementos de una lista o arreglo en un orden específico (generalmente ascendente o descendente).</p>
               </div>
 
               <div class="help-section">
@@ -259,38 +221,48 @@
                   <div class="step-detail">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                      <strong>Bubble Sort (Ordenamiento de Burbuja):</strong> Compara elementos adyacentes y los intercambia si están en el orden incorrecto. Es simple pero ineficiente para grandes conjuntos de datos. Complejidad: O(n²).
+                      <strong>Bubble Sort:</strong> Compara elementos adyacentes y los intercambia si están en el orden incorrecto. Complejidad: O(n²).
                     </div>
                   </div>
                   <div class="step-detail">
                     <div class="step-num">2</div>
                     <div class="step-text">
-                      <strong>Quick Sort (Ordenamiento Rápido):</strong> Divide y vencerás. Selecciona un pivote y particiona el arreglo en elementos menores y mayores que él. Muy eficiente. Complejidad: O(n log n) promedio.
+                      <strong>Quick Sort:</strong> Divide y vencerás usando un pivote. Complejidad: O(n log n) promedio.
                     </div>
                   </div>
                   <div class="step-detail">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                      <strong>Merge Sort (Ordenamiento por Mezcla):</strong> Divide el arreglo en mitades, ordena recursivamente cada mitad y luego las mezcla. Estable y eficiente. Complejidad: O(n log n).
+                      <strong>Merge Sort:</strong> Divide el arreglo en mitades y las mezcla ordenadamente. Complejidad: O(n log n).
                     </div>
                   </div>
                 </div>
               </div>
 
               <div class="help-section">
-                <h3>Cómo usar la herramienta:</h3>
+                <h3>Importar/Exportar:</h3>
                 <ul>
-                  <li><strong>Configurar tamaño:</strong> Ajuste el número de elementos del arreglo</li>
-                  <li><strong>Generar datos:</strong> Use los botones para crear arreglos aleatorios, ordenados, inversos o parciales</li>
-                  <li><strong>Seleccionar algoritmo:</strong> Elija entre Bubble, Quick o Merge Sort</li>
-                  <li><strong>Ajustar velocidad:</strong> Controle qué tan rápido se visualiza el ordenamiento</li>
-                  <li><strong>Iniciar:</strong> Presione "Iniciar Ordenamiento" para ver el proceso</li>
+                  <li><strong>Exportar:</strong> Guarda el arreglo actual en un archivo JSON</li>
+                  <li><strong>Importar:</strong> Carga un arreglo desde un archivo JSON</li>
+                  <li><strong>Nombre del archivo:</strong> Personaliza el nombre del archivo al exportar</li>
                 </ul>
               </div>
 
               <div class="help-section">
-                <h3>Interpretación visual:</h3>
+                <h3>Botones de control:</h3>
                 <ul>
+                  <li><strong>Limpiar Todo:</strong> Elimina todos los elementos del arreglo</li>
+                  <li><strong>Reiniciar:</strong> Genera un nuevo arreglo aleatorio</li>
+                  <li><strong>Iniciar Ordenamiento:</strong> Ejecuta el algoritmo seleccionado</li>
+                </ul>
+              </div>
+
+              <div class="help-section">
+                <h3>Visualización:</h3>
+                <ul>
+                  <li>El <strong>tamaño del cuadrado</strong> es proporcional al valor numérico</li>
+                  <li>Los números se muestran dentro de cada cuadrado</li>
+                  <li>El índice se muestra debajo de cada cuadrado</li>
                   <li><span style="color: #f59e0b;">Amarillo:</span> Elementos siendo comparados</li>
                   <li><span style="color: #ef4444;">Rojo:</span> Elementos siendo intercambiados</li>
                   <li><span style="color: #10b981;">Verde:</span> Elementos ya ordenados</li>
@@ -299,7 +271,7 @@
               </div>
 
               <div class="help-note-box">
-                <strong>Nota importante:</strong> La velocidad de visualización afecta el tiempo real de ejecución. Para arreglos grandes (>30 elementos), se recomienda usar velocidad más alta.
+                <strong>Nota:</strong> Los cuadrados más pequeños representan números menores, los más grandes representan números mayores.
               </div>
             </div>
           </div>
@@ -310,33 +282,36 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 // Estado
 const arraySize = ref(15);
+const lowerLimit = ref(10);
+const upperLimit = ref(100);
 const selectedAlgorithm = ref('bubble');
 const speed = ref(50);
 const isSorting = ref(false);
-const showResultModal = ref(false);
 const showHelpModal = ref(false);
 const statusMessage = ref('');
 const statusTone = ref('');
 const array = ref([]);
-const sortedArray = ref([]);
-const steps = ref([]);
-const currentStepIndex = ref(0);
 const comparisons = ref(0);
 const swaps = ref(0);
 const executionTime = ref(0);
 const comparingIndices = ref([]);
 const swappingIndices = ref([]);
 const sortedIndices = ref([]);
-const isAscending = ref(true);
-
-let sortingInterval = null;
-let maxValue = ref(100);
+const fileName = ref('arreglo_ordenamiento');
 
 // Métodos
+const getSquareSize = (value) => {
+  const minSize = 30;
+  const maxSize = 100;
+  const range = upperLimit.value - lowerLimit.value;
+  const normalizedValue = (value - lowerLimit.value) / range;
+  return minSize + normalizedValue * (maxSize - minSize);
+};
+
 const getAlgorithmName = () => {
   const names = {
     bubble: 'Bubble Sort',
@@ -362,25 +337,150 @@ const getBarColor = (index) => {
   return '#3b82f6';
 };
 
+// Limpiar todo el arreglo
+const clearAll = () => {
+  array.value = [];
+  arraySize.value = 0;
+  sortedIndices.value = [];
+  comparingIndices.value = [];
+  swappingIndices.value = [];
+  comparisons.value = 0;
+  swaps.value = 0;
+  executionTime.value = 0;
+  statusMessage.value = 'Arreglo limpiado completamente';
+  statusTone.value = 'neutral';
+  setTimeout(() => { statusMessage.value = ''; }, 2000);
+};
+
+// Exportar datos
+const exportData = () => {
+  if (array.value.length === 0) {
+    statusMessage.value = 'No hay datos para exportar. Genere o importe un arreglo primero.';
+    statusTone.value = 'error';
+    setTimeout(() => { statusMessage.value = ''; }, 2000);
+    return;
+  }
+  
+  const exportObject = {
+    metadata: {
+      name: fileName.value,
+      date: new Date().toISOString(),
+      size: array.value.length,
+      lowerLimit: lowerLimit.value,
+      upperLimit: upperLimit.value,
+      algorithm: selectedAlgorithm.value
+    },
+    data: array.value,
+    config: {
+      arraySize: arraySize.value,
+      lowerLimit: lowerLimit.value,
+      upperLimit: upperLimit.value,
+      algorithm: selectedAlgorithm.value,
+      speed: speed.value
+    }
+  };
+  
+  const jsonString = JSON.stringify(exportObject, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${fileName.value || 'arreglo'}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  statusMessage.value = 'Arreglo exportado exitosamente';
+  statusTone.value = 'success';
+  setTimeout(() => { statusMessage.value = ''; }, 2000);
+};
+
+// Importar datos
+const importData = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      if (importedData.data && Array.isArray(importedData.data)) {
+        array.value = importedData.data;
+        arraySize.value = array.value.length;
+        
+        if (importedData.config) {
+          if (importedData.config.lowerLimit) lowerLimit.value = importedData.config.lowerLimit;
+          if (importedData.config.upperLimit) upperLimit.value = importedData.config.upperLimit;
+          if (importedData.config.algorithm) selectedAlgorithm.value = importedData.config.algorithm;
+          if (importedData.config.speed) speed.value = importedData.config.speed;
+        } else if (importedData.metadata) {
+          if (importedData.metadata.lowerLimit) lowerLimit.value = importedData.metadata.lowerLimit;
+          if (importedData.metadata.upperLimit) upperLimit.value = importedData.metadata.upperLimit;
+          if (importedData.metadata.name) fileName.value = importedData.metadata.name;
+        }
+        
+        const minValue = Math.min(...array.value);
+        const maxValue = Math.max(...array.value);
+        if (minValue < lowerLimit.value) lowerLimit.value = minValue - 5;
+        if (maxValue > upperLimit.value) upperLimit.value = maxValue + 5;
+        
+        sortedIndices.value = [];
+        comparingIndices.value = [];
+        swappingIndices.value = [];
+        comparisons.value = 0;
+        swaps.value = 0;
+        executionTime.value = 0;
+        
+        statusMessage.value = `Arreglo importado: ${array.value.length} elementos`;
+        statusTone.value = 'success';
+      } else {
+        throw new Error('Formato de archivo inválido');
+      }
+    } catch (error) {
+      statusMessage.value = 'Error al importar: Archivo inválido';
+      statusTone.value = 'error';
+    }
+    setTimeout(() => { statusMessage.value = ''; }, 2000);
+  };
+  
+  reader.readAsText(file);
+  event.target.value = '';
+};
+
+// Generadores de arreglos
 const generateRandomArray = () => {
   const newArray = [];
   for (let i = 0; i < arraySize.value; i++) {
-    newArray.push(Math.floor(Math.random() * 90) + 10);
+    const value = Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) + lowerLimit.value;
+    newArray.push(value);
   }
   array.value = newArray;
-  maxValue.value = Math.max(...newArray);
-  statusMessage.value = 'Arreglo aleatorio generado';
+  sortedIndices.value = [];
+  comparingIndices.value = [];
+  swappingIndices.value = [];
+  comparisons.value = 0;
+  swaps.value = 0;
+  executionTime.value = 0;
+  statusMessage.value = `Arreglo aleatorio generado (rango: ${lowerLimit.value}-${upperLimit.value})`;
   statusTone.value = 'success';
   setTimeout(() => { statusMessage.value = ''; }, 2000);
 };
 
 const generateSortedArray = () => {
   const newArray = [];
+  const step = (upperLimit.value - lowerLimit.value) / (arraySize.value - 1);
   for (let i = 0; i < arraySize.value; i++) {
-    newArray.push(10 + Math.floor(i * (90 / arraySize.value)));
+    newArray.push(Math.round(lowerLimit.value + i * step));
   }
   array.value = newArray;
-  maxValue.value = Math.max(...newArray);
+  sortedIndices.value = [];
+  comparingIndices.value = [];
+  swappingIndices.value = [];
+  comparisons.value = 0;
+  swaps.value = 0;
+  executionTime.value = 0;
   statusMessage.value = 'Arreglo ordenado generado';
   statusTone.value = 'success';
   setTimeout(() => { statusMessage.value = ''; }, 2000);
@@ -388,11 +488,17 @@ const generateSortedArray = () => {
 
 const generateReversedArray = () => {
   const newArray = [];
+  const step = (upperLimit.value - lowerLimit.value) / (arraySize.value - 1);
   for (let i = 0; i < arraySize.value; i++) {
-    newArray.push(100 - Math.floor(i * (90 / arraySize.value)));
+    newArray.push(Math.round(upperLimit.value - i * step));
   }
   array.value = newArray;
-  maxValue.value = Math.max(...newArray);
+  sortedIndices.value = [];
+  comparingIndices.value = [];
+  swappingIndices.value = [];
+  comparisons.value = 0;
+  swaps.value = 0;
+  executionTime.value = 0;
   statusMessage.value = 'Arreglo inverso generado';
   statusTone.value = 'success';
   setTimeout(() => { statusMessage.value = ''; }, 2000);
@@ -400,15 +506,21 @@ const generateReversedArray = () => {
 
 const generatePartialArray = () => {
   const newArray = [];
+  const step = (upperLimit.value - lowerLimit.value) / (arraySize.value - 1);
   for (let i = 0; i < arraySize.value; i++) {
     if (i < arraySize.value / 2) {
-      newArray.push(10 + Math.floor(i * (90 / arraySize.value)));
+      newArray.push(Math.round(lowerLimit.value + i * step));
     } else {
-      newArray.push(Math.floor(Math.random() * 90) + 10);
+      newArray.push(Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) + lowerLimit.value);
     }
   }
   array.value = newArray;
-  maxValue.value = Math.max(...newArray);
+  sortedIndices.value = [];
+  comparingIndices.value = [];
+  swappingIndices.value = [];
+  comparisons.value = 0;
+  swaps.value = 0;
+  executionTime.value = 0;
   statusMessage.value = 'Arreglo parcialmente ordenado generado';
   statusTone.value = 'success';
   setTimeout(() => { statusMessage.value = ''; }, 2000);
@@ -416,16 +528,6 @@ const generatePartialArray = () => {
 
 const resetArray = () => {
   generateRandomArray();
-  sortedIndices.value = [];
-  comparingIndices.value = [];
-  swappingIndices.value = [];
-  comparisons.value = 0;
-  swaps.value = 0;
-  executionTime.value = 0;
-  steps.value = [];
-  statusMessage.value = 'Arreglo reiniciado';
-  statusTone.value = 'neutral';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
 };
 
 const incrementSize = () => {
@@ -442,6 +544,34 @@ const decrementSize = () => {
   }
 };
 
+const incrementLowerLimit = () => {
+  if (lowerLimit.value < upperLimit.value - 1) {
+    lowerLimit.value++;
+    generateRandomArray();
+  }
+};
+
+const decrementLowerLimit = () => {
+  if (lowerLimit.value > 0) {
+    lowerLimit.value--;
+    generateRandomArray();
+  }
+};
+
+const incrementUpperLimit = () => {
+  if (upperLimit.value < 200) {
+    upperLimit.value++;
+    generateRandomArray();
+  }
+};
+
+const decrementUpperLimit = () => {
+  if (upperLimit.value > lowerLimit.value + 1) {
+    upperLimit.value--;
+    generateRandomArray();
+  }
+};
+
 const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
@@ -454,7 +584,6 @@ const delay = () => {
 async function bubbleSort() {
   const arr = [...array.value];
   const n = arr.length;
-  steps.value = [];
   comparisons.value = 0;
   swaps.value = 0;
   sortedIndices.value = [];
@@ -532,7 +661,6 @@ async function partition(arr, low, high) {
 
 async function quickSortWrapper() {
   const arr = [...array.value];
-  steps.value = [];
   comparisons.value = 0;
   swaps.value = 0;
   sortedIndices.value = [];
@@ -597,7 +725,6 @@ async function merge(arr, l, m, r) {
 
 async function mergeSortWrapper() {
   const arr = [...array.value];
-  steps.value = [];
   comparisons.value = 0;
   swaps.value = 0;
   sortedIndices.value = [];
@@ -612,6 +739,12 @@ async function mergeSortWrapper() {
 // Iniciar ordenamiento
 async function startSorting() {
   if (isSorting.value) return;
+  if (array.value.length === 0) {
+    statusMessage.value = 'No hay elementos para ordenar. Genere un arreglo primero.';
+    statusTone.value = 'error';
+    setTimeout(() => { statusMessage.value = ''; }, 2000);
+    return;
+  }
   
   isSorting.value = true;
   sortedIndices.value = [];
@@ -628,57 +761,195 @@ async function startSorting() {
   const endTime = performance.now();
   executionTime.value = Math.round(endTime - startTime);
   
-  sortedArray.value = [...array.value];
-  steps.value = generateSteps();
-  currentStepIndex.value = 0;
-  
   isSorting.value = false;
-  showResultModal.value = true;
   
   statusMessage.value = 'Ordenamiento completado';
   statusTone.value = 'success';
   setTimeout(() => { statusMessage.value = ''; }, 2000);
 }
 
-const generateSteps = () => {
-  const stepsList = [
-    {
-      title: 'Inicio del ordenamiento',
-      description: `Se inicia el algoritmo ${getAlgorithmName()} con un arreglo de ${arraySize.value} elementos.`
-    },
-    {
-      title: 'Proceso de comparación',
-      description: `Se realizaron ${comparisons.value} comparaciones entre elementos.`
-    },
-    {
-      title: 'Intercambios realizados',
-      description: `Se ejecutaron ${swaps.value} intercambios para ordenar el arreglo.`
-    },
-    {
-      title: 'Ordenamiento completado',
-      description: `El arreglo fue ordenado exitosamente en ${executionTime.value} milisegundos.`
-    }
-  ];
-  return stepsList;
-};
-
-const jumpToStep = (index) => {
-  currentStepIndex.value = index;
-};
-
-const closeModal = () => {
-  showResultModal.value = false;
-};
-
 // Inicializar
 generateRandomArray();
 
-watch(arraySize, () => {
+watch([arraySize, lowerLimit, upperLimit], () => {
   generateRandomArray();
 });
 </script>
 
 <style scoped>
+/* Mantener todos los estilos anteriores y agregar los nuevos */
+
+/* Sección de Importar/Exportar */
+.import-export-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.file-name-input {
+  margin-bottom: 12px;
+}
+
+.file-name-input label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.file-name-field {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  background: white;
+}
+
+.file-name-field:focus {
+  outline: none;
+  border-color: #2a5298;
+  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+}
+
+.import-export-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-export, .btn-import {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.btn-export {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-import {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  display: inline-block;
+}
+
+.btn-import:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  cursor: pointer;
+}
+
+/* Botones de acción principales */
+.main-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-execute {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-execute:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
+}
+
+.btn-execute:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-clear {
+  width: 100%;
+  padding: 12px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-clear:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-reset {
+  width: 100%;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.btn-reset:hover {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.btn-help {
+  width: 100%;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #2a5298;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-help:hover {
+  background: #2a5298;
+  color: white;
+  border-color: #2a5298;
+  transform: translateY(-2px);
+}
+
+.execute-icon {
+  font-size: 0.9rem;
+}
+
+/* Asegurar que los estilos existentes se mantengan */
 * {
   box-sizing: border-box;
 }
@@ -690,7 +961,6 @@ watch(arraySize, () => {
   position: relative;
 }
 
-/* Hero Section */
 .hero-section {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -743,14 +1013,12 @@ watch(arraySize, () => {
   background: linear-gradient(135deg, #10b981, #059669);
 }
 
-/* Main Layout */
 .main-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 24px;
 }
 
-/* Config Card */
 .config-card {
   background: white;
   border-radius: 24px;
@@ -783,11 +1051,17 @@ watch(arraySize, () => {
   width: 100%;
 }
 
-.dimension-item label {
+.dimension-item label, .range-item label {
   display: block;
   font-size: 0.85rem;
   color: #666;
   margin-bottom: 8px;
+}
+
+.range-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .number-control {
@@ -898,73 +1172,6 @@ watch(arraySize, () => {
   transform: translateY(-2px);
 }
 
-.btn-execute {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-weight: bold;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s;
-}
-
-.btn-execute:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
-}
-
-.btn-execute:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-reset {
-  width: 100%;
-  padding: 12px;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #666;
-  transition: all 0.2s;
-}
-
-.btn-reset:hover {
-  background: #e0e0e0;
-  transform: translateY(-2px);
-}
-
-.btn-help {
-  width: 100%;
-  padding: 12px;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #2a5298;
-  transition: all 0.2s;
-}
-
-.btn-help:hover {
-  background: #2a5298;
-  color: white;
-  border-color: #2a5298;
-  transform: translateY(-2px);
-}
-
-.execute-icon {
-  font-size: 0.9rem;
-}
-
 .stats-display {
   display: flex;
   gap: 12px;
@@ -1017,7 +1224,6 @@ watch(arraySize, () => {
   color: #004085;
 }
 
-/* Visualization Card */
 .visualization-card {
   background: white;
   border-radius: 24px;
@@ -1030,6 +1236,8 @@ watch(arraySize, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .visualization-header h3 {
@@ -1042,48 +1250,70 @@ watch(arraySize, () => {
   color: #999;
 }
 
-.array-container {
-  height: 400px;
+.squares-container {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: flex-end;
-  gap: 4px;
+  gap: 16px;
+  min-height: 400px;
   padding: 20px;
   background: #f8f9fa;
   border-radius: 16px;
   margin-bottom: 20px;
 }
 
-.array-bar {
-  flex: 1;
+.array-square-wrapper {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.array-square {
+  display: flex;
+  align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  border-radius: 4px 4px 0 0;
-  position: relative;
-  min-width: 30px;
-}
-
-.bar-value {
-  position: absolute;
-  top: -20px;
-  font-size: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-weight: bold;
-  color: #333;
 }
 
-.comparing {
-  background-color: #f59e0b !important;
-  transform: scaleY(1.05);
+.square-value {
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
 }
 
-.swapping {
-  background-color: #ef4444 !important;
+.square-index {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.comparing .array-square {
+  animation: pulse 0.5s ease infinite;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
+}
+
+.swapping .array-square {
   animation: shake 0.3s ease;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
 }
 
-.sorted {
-  background-color: #10b981 !important;
+.sorted .array-square {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes shake {
@@ -1110,7 +1340,7 @@ watch(arraySize, () => {
 .legend-color {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .comparing-color {
@@ -1129,7 +1359,7 @@ watch(arraySize, () => {
   background-color: #3b82f6;
 }
 
-/* Modal de Resultados */
+/* Modal de ayuda */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1145,32 +1375,14 @@ watch(arraySize, () => {
   animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.result-modal {
+.help-modal {
   background: white;
   border-radius: 32px;
-  width: 95%;
-  max-width: 1400px;
-  height: 85vh;
-  display: flex;
-  flex-direction: column;
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
   overflow: hidden;
-  animation: slideUp 0.4s ease;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  animation: modalSlideIn 0.3s ease;
 }
 
 .modal-header {
@@ -1211,216 +1423,6 @@ watch(arraySize, () => {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.close-btn {
-  padding: 10px 24px;
-  background: #2a5298;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: #1e3c72;
-  transform: translateY(-2px);
-}
-
-/* Summary Card */
-.summary-card {
-  background: white;
-  padding: 20px;
-  border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-}
-
-.summary-stat {
-  text-align: center;
-}
-
-.summary-stat .stat-label {
-  font-size: 0.75rem;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.summary-stat .stat-value {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-/* Split Layout */
-.split-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  min-height: 400px;
-}
-
-.half-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow: hidden;
-}
-
-.section-header h3 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-  color: #333;
-}
-
-.section-header p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #666;
-}
-
-/* Array Section */
-.array-section {
-  border-right: 1px solid #e0e0e0;
-  padding-right: 20px;
-}
-
-.sorted-array-container {
-  height: 300px;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 16px;
-}
-
-.sorted-bar {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  transition: all 0.3s ease;
-  border-radius: 4px 4px 0 0;
-  position: relative;
-  min-width: 30px;
-}
-
-.array-values {
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-family: monospace;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-/* Timeline Section */
-.timeline-section {
-  padding-left: 20px;
-}
-
-.timeline-container {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 400px;
-}
-
-.timeline-entry {
-  display: flex;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: white;
-  border: 1px solid #e8e8e8;
-}
-
-.timeline-entry:hover {
-  background: #e0e7ff;
-  transform: translateX(4px);
-}
-
-.active-entry {
-  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-  border-left: 3px solid #2a5298;
-}
-
-.entry-marker {
-  flex-shrink: 0;
-}
-
-.marker-circle {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  color: white;
-  border-radius: 50%;
-  font-weight: bold;
-  font-size: 0.75rem;
-}
-
-.entry-content {
-  flex: 1;
-}
-
-.entry-content h4 {
-  margin: 0 0 4px 0;
-  font-size: 0.85rem;
-  color: #333;
-}
-
-.entry-content p {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #666;
-  line-height: 1.3;
-}
-
-/* Help Modal */
-.help-modal {
-  background: white;
-  border-radius: 32px;
-  max-width: 800px;
-  width: 90%;
-  max-height: 85vh;
-  overflow: hidden;
-  animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
 
 .help-content-detailed {
@@ -1504,6 +1506,22 @@ watch(arraySize, () => {
   line-height: 1.5;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -1529,18 +1547,8 @@ watch(arraySize, () => {
     text-align: center;
   }
   
-  .split-layout {
+  .range-group {
     grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .array-section {
-    border-right: none;
-    padding-right: 0;
-  }
-  
-  .timeline-section {
-    padding-left: 0;
   }
 }
 
@@ -1557,18 +1565,16 @@ watch(arraySize, () => {
     font-size: 1.5rem;
   }
   
-  .result-modal {
-    width: 98%;
-    height: 95vh;
+  .squares-container {
+    min-height: 300px;
   }
   
-  .array-container, .sorted-array-container {
-    height: 250px;
+  .square-value {
+    font-size: 10px;
   }
   
-  .bar-value {
-    font-size: 8px;
-    top: -16px;
+  .square-index {
+    font-size: 10px;
   }
 }
 </style>
