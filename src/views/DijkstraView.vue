@@ -52,9 +52,23 @@
             </div>
             <div class="info-status">
               <strong>📍 Nodo Origen:</strong> 
-              <span class="source-badge" :style="{ backgroundColor: selectedSourceColor }">
+              <span class="source-badge" :style="{ backgroundColor: '#ef4444' }">
                 {{ getNodeLabel(sourceNode) }}
               </span>
+            </div>
+          </div>
+
+          <div class="origen-selector">
+            <label>🎯 Seleccionar nodo origen (clic en el grafo)</label>
+            <div class="origen-buttons">
+              <button 
+                v-for="node in nodes" 
+                :key="node.id"
+                @click="selectSourceNode(node.id)"
+                class="origen-btn"
+                :class="{ active: sourceNode === node.id }">
+                {{ node.label }}
+              </button>
             </div>
           </div>
 
@@ -84,9 +98,9 @@
         
         <div class="graph-instructions">
           💡 <strong>Instrucciones:</strong> 
-          <span>Haz clic en un nodo para seleccionarlo como ORIGEN</span>
-          <span>| Arrastra nodos para reubicarlos</span>
-          <span>| Doble clic en arista para editar peso</span>
+          <span>🖱️ Clic en nodo → Selecciona origen</span>
+          <span>| ✋ Arrastra nodos → Reubicar</span>
+          <span>| ✏️ Doble clic en arista → Editar peso</span>
         </div>
 
         <div class="graph-container">
@@ -98,7 +112,7 @@
         <div class="legend">
           <div class="legend-item">
             <div class="legend-color source-color"></div>
-            <span>🔴 Nodo Origen (seleccionado)</span>
+            <span>🔴 Nodo Origen</span>
           </div>
           <div class="legend-item">
             <div class="legend-color path-color"></div>
@@ -132,7 +146,7 @@
                 </svg>
               </div>
               <div>
-                <h4>🎯 Desde el nodo origen</h4>
+                <h4>🎯 Distancias desde el origen</h4>
                 <p class="source-info">Nodo <strong>{{ getNodeLabel(sourceNode) }}</strong> → a todos los demás</p>
               </div>
             </div>
@@ -164,7 +178,7 @@
                 <thead>
                   <tr>
                     <th>Destino</th>
-                    <th>Distancia desde {{ getNodeLabel(sourceNode) }}</th>
+                    <th>Distancia</th>
                     <th>Ruta</th>
                   </tr>
                 </thead>
@@ -199,10 +213,16 @@
             <div v-if="showSteps" class="steps-container">
               <div v-for="(step, idx) in steps" :key="idx" class="step-item">
                 <div class="step-number">{{ idx + 1 }}</div>
-                <div class="step-content">
-                  <p v-html="step"></p>
-                </div>
+                <div class="step-content" v-html="step"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Mensaje si no hay resultados -->
+          <div v-if="distances.length === 0 && !isExecuting" class="result-section-card empty-state">
+            <div class="empty-message">
+              <span>🔍</span>
+              <p>Selecciona un nodo origen y presiona "Ejecutar Dijkstra"</p>
             </div>
           </div>
         </div>
@@ -220,62 +240,16 @@
           <div class="modal-body">
             <div class="help-content-detailed">
               <div class="help-section">
-                <h3>🎯 ¿Qué es el Algoritmo de Dijkstra?</h3>
-                <p>Es un algoritmo que encuentra el camino más corto desde un nodo origen a todos los demás nodos en un grafo con pesos positivos.</p>
+                <h3>🎯 ¿Qué es?</h3>
+                <p>Encuentra el camino más corto desde un nodo origen a todos los demás en un grafo con pesos positivos.</p>
               </div>
-
               <div class="help-section">
-                <h3>📝 ¿Cómo se usa?</h3>
-                <div class="steps-list">
-                  <div class="step-detail">
-                    <div class="step-num">1</div>
-                    <div class="step-text"><strong>Selecciona el nodo origen:</strong> Haz clic en cualquier nodo del grafo para elegirlo como punto de partida</div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">2</div>
-                    <div class="step-text"><strong>Ejecuta el algoritmo:</strong> Presiona el botón "Ejecutar Dijkstra"</div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">3</div>
-                    <div class="step-text"><strong>Observa los resultados:</strong> Se mostrarán las distancias mínimas a cada nodo y los caminos</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="help-section">
-                <h3>⚙️ Cómo funciona paso a paso:</h3>
-                <div class="steps-list">
-                  <div class="step-detail">
-                    <div class="step-num">1</div>
-                    <div class="step-text">Se asigna distancia 0 al nodo origen e infinito a los demás</div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">2</div>
-                    <div class="step-text">Se selecciona el nodo no visitado con menor distancia</div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">3</div>
-                    <div class="step-text">Se revisan sus vecinos y se actualizan sus distancias si se encuentra un camino más corto</div>
-                  </div>
-                  <div class="step-detail">
-                    <div class="step-num">4</div>
-                    <div class="step-text">Se marca el nodo como visitado y se repite hasta recorrer todos</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="help-section">
-                <h3>🖱️ Interacción con el grafo:</h3>
+                <h3>📝 Cómo usar:</h3>
                 <ul>
-                  <li><strong>Clic en nodo:</strong> Selecciona el nodo como ORIGEN</li>
-                  <li><strong>Arrastrar nodo:</strong> Reubica el nodo en el canvas</li>
-                  <li><strong>Doble clic en arista:</strong> Edita el peso de la conexión</li>
-                  <li><strong>Shift + clic en vacío:</strong> Crea un nuevo nodo</li>
+                  <li><strong>Seleccionar origen:</strong> Haz clic en cualquier nodo o usa los botones</li>
+                  <li><strong>Ejecutar:</strong> Presiona "Ejecutar Dijkstra"</li>
+                  <li><strong>Ver resultados:</strong> Distancias, rutas y pasos explicados</li>
                 </ul>
-              </div>
-
-              <div class="help-note-box">
-                <strong>💡 Nota importante:</strong> El algoritmo de Dijkstra solo funciona con pesos positivos. Los caminos se muestran en color verde en el grafo.
               </div>
             </div>
           </div>
@@ -288,7 +262,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 
 // Estado
 const nodeCount = ref(6);
@@ -299,7 +273,6 @@ const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
 const exportFileName = ref("dijkstra");
-const selectedSourceColor = ref("#ef4444");
 
 // Datos del grafo
 const nodes = ref([]);
@@ -315,8 +288,6 @@ const canvasRef = ref(null);
 let ctx = null;
 let dragging = false;
 let dragNode = null;
-let creatingEdge = false;
-let edgeStartNode = null;
 
 const nodeLabels = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
@@ -329,19 +300,25 @@ const getNodeLabel = (id) => {
 
 const getPathString = (targetId) => {
   if (targetId === sourceNode.value) return `${getNodeLabel(sourceNode.value)}`;
-  if (previous.value[targetId] === -1) return "No hay ruta";
+  if (previous.value[targetId] === -1 || previous.value[targetId] === undefined) return "No hay ruta";
   
   const path = [];
   let current = targetId;
-  while (current !== -1) {
+  while (current !== -1 && current !== undefined) {
     path.unshift(getNodeLabel(current));
+    if (current === sourceNode.value) break;
     current = previous.value[current];
-    if (current === sourceNode.value) {
-      path.unshift(getNodeLabel(sourceNode.value));
-      break;
-    }
+    if (current === -1 || current === undefined) break;
   }
   return path.join(" → ");
+};
+
+const selectSourceNode = (id) => {
+  sourceNode.value = id;
+  drawGraph();
+  statusMessage.value = `🎯 Nodo origen cambiado a ${getNodeLabel(id)}`;
+  statusTone.value = "success";
+  setTimeout(() => statusMessage.value = "", 1500);
 };
 
 const generateRandomGraph = () => {
@@ -380,7 +357,16 @@ const generateRandomGraph = () => {
   
   nodes.value = newNodes;
   edgesList.value = newEdges;
-  drawGraph();
+  distances.value = [];
+  previous.value = [];
+  pathEdges.value = [];
+  steps.value = [];
+  distancesTable.value = [];
+  
+  nextTick(() => {
+    drawGraph();
+  });
+  
   statusMessage.value = "✅ Grafo aleatorio generado";
   statusTone.value = "success";
   setTimeout(() => statusMessage.value = "", 2000);
@@ -410,7 +396,16 @@ const loadExample = () => {
   ];
   
   sourceNode.value = 0;
-  drawGraph();
+  distances.value = [];
+  previous.value = [];
+  pathEdges.value = [];
+  steps.value = [];
+  distancesTable.value = [];
+  
+  nextTick(() => {
+    drawGraph();
+  });
+  
   statusMessage.value = "✅ Ejemplo clásico cargado";
   statusTone.value = "success";
   setTimeout(() => statusMessage.value = "", 2000);
@@ -423,7 +418,13 @@ const resetGraph = () => {
   previous.value = [];
   pathEdges.value = [];
   steps.value = [];
-  drawGraph();
+  distancesTable.value = [];
+  
+  if (canvasRef.value) {
+    const ctx = canvasRef.value.getContext("2d");
+    ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
+  }
+  
   statusMessage.value = "🔄 Grafo reiniciado";
   statusTone.value = "neutral";
   setTimeout(() => statusMessage.value = "", 2000);
@@ -447,6 +448,8 @@ const runDijkstra = async () => {
   }
   
   isExecuting.value = true;
+  
+  // Pequeña pausa para UI
   await new Promise(resolve => setTimeout(resolve, 100));
   
   const n = nodes.value.length;
@@ -454,17 +457,21 @@ const runDijkstra = async () => {
   const prev = Array(n).fill(-1);
   const visited = Array(n).fill(false);
   const stepList = [];
-  const edgesMap = new Map();
   
+  // Crear mapa de aristas para búsqueda rápida
+  const edgesMap = new Map();
   edgesList.value.forEach(edge => {
     edgesMap.set(`${edge.from}-${edge.to}`, edge.weight);
     edgesMap.set(`${edge.to}-${edge.from}`, edge.weight);
   });
   
   dist[sourceNode.value] = 0;
-  stepList.push(`🎯 <strong>Inicio:</strong> Distancia al nodo <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
+  stepList.push(`🎯 <strong>INICIO:</strong> Distancia a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
+  
+  let iteration = 0;
   
   for (let count = 0; count < n; count++) {
+    // Encontrar nodo no visitado con menor distancia
     let minDist = Infinity;
     let u = -1;
     
@@ -478,34 +485,41 @@ const runDijkstra = async () => {
     if (u === -1) break;
     
     visited[u] = true;
+    iteration++;
+    
     if (u !== sourceNode.value) {
-      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Seleccionamos el nodo <strong>${getNodeLabel(u)}</strong> con distancia ${dist[u]} desde el origen`);
+      stepList.push(`📍 <strong>Paso ${iteration}:</strong> Seleccionamos <strong>${getNodeLabel(u)}</strong> (distancia = ${dist[u]})`);
     } else {
-      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Comenzamos desde el nodo origen <strong>${getNodeLabel(u)}</strong>`);
+      stepList.push(`📍 <strong>Paso ${iteration}:</strong> Comenzamos desde el origen <strong>${getNodeLabel(u)}</strong>`);
     }
     
+    // Actualizar distancias a vecinos
+    let updatedCount = 0;
     for (let v = 0; v < n; v++) {
       const weight = edgesMap.get(`${u}-${v}`);
       if (weight && !visited[v]) {
         const newDist = dist[u] + weight;
         if (newDist < dist[v]) {
-          const oldDist = dist[v] === Infinity ? "∞" : dist[v];
+          const oldDistStr = dist[v] === Infinity ? "∞" : dist[v];
           dist[v] = newDist;
           prev[v] = u;
-          stepList.push(`  ↳ <strong>Actualizamos ${getNodeLabel(v)}:</strong> ${oldDist} → ${newDist} (vía ${getNodeLabel(u)})`);
+          stepList.push(`  ↳ <strong>Actualizando ${getNodeLabel(v)}:</strong> ${oldDistStr} → ${newDist} (vía ${getNodeLabel(u)})`);
+          updatedCount++;
         }
       }
     }
     
+    if (updatedCount === 0 && u !== sourceNode.value) {
+      stepList.push(`  ℹ️ No se actualizaron distancias desde ${getNodeLabel(u)}`);
+    }
+    
+    // Actualizar UI después de cada iteración
     distances.value = [...dist];
     drawGraph(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
   
-  const reachedNodes = dist.filter(d => d !== Infinity).length - 1;
-  stepList.push(`✅ <strong>Finalizado!</strong> Se encontraron rutas a ${reachedNodes} nodos desde ${getNodeLabel(sourceNode.value)}`);
-  
-  // Reconstruir caminos
+  // Reconstruir caminos para visualización
   const newPathEdges = [];
   for (let i = 0; i < n; i++) {
     if (i !== sourceNode.value && prev[i] !== -1) {
@@ -513,7 +527,10 @@ const runDijkstra = async () => {
       while (prev[current] !== -1) {
         const from = prev[current];
         const to = current;
-        if (!newPathEdges.some(e => (e.from === from && e.to === to) || (e.from === to && e.to === from))) {
+        const edgeExists = newPathEdges.some(e => 
+          (e.from === from && e.to === to) || (e.from === to && e.to === from)
+        );
+        if (!edgeExists) {
           newPathEdges.push({ from, to });
         }
         current = prev[current];
@@ -522,14 +539,21 @@ const runDijkstra = async () => {
     }
   }
   
+  // Resultados finales
+  const reachedNodes = dist.filter(d => d !== Infinity && d !== 0).length;
+  stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reachedNodes} nodos desde ${getNodeLabel(sourceNode.value)}`);
+  stepList.push(`📊 <strong>RESUMEN:</strong> ${reachedNodes} nodos alcanzables, ${n - 1 - reachedNodes} nodos no alcanzables`);
+  
   pathEdges.value = newPathEdges;
   steps.value = stepList;
   distancesTable.value = dist.map((d, i) => ({ node: getNodeLabel(i), distance: d }));
+  
   drawGraph(true);
   
   statusMessage.value = `✅ Dijkstra completado. Distancias calculadas desde ${getNodeLabel(sourceNode.value)}`;
   statusTone.value = "success";
   isExecuting.value = false;
+  
   setTimeout(() => statusMessage.value = "", 3000);
 };
 
@@ -541,8 +565,11 @@ const drawGraph = (highlightPaths = false) => {
   const canvas = canvasRef.value;
   ctx = canvas.getContext("2d");
   
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  // Asegurar dimensiones correctas
+  if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+  }
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
@@ -574,6 +601,7 @@ const drawGraph = (highlightPaths = false) => {
     ctx.stroke();
     ctx.setLineDash([]);
     
+    // Peso de la arista
     const midX = (fromNode.x + toNode.x) / 2;
     const midY = (fromNode.y + toNode.y) / 2;
     
@@ -639,30 +667,8 @@ const handleCanvasClick = (e) => {
   const node = findNodeAt(pos.x, pos.y);
   
   if (node) {
-    // Seleccionar nodo como origen (clic normal)
-    sourceNode.value = node.id;
-    drawGraph();
-    statusMessage.value = `🎯 Nodo origen cambiado a ${node.label}`;
-    statusTone.value = "success";
-    setTimeout(() => statusMessage.value = "", 1500);
-  } else {
-    // Crear nuevo nodo con Shift + clic
-    if (e.shiftKey) {
-      const newLabel = prompt("Nombre del nodo:", nodeLabels[nodes.value.length % nodeLabels.length] + (Math.floor(nodes.value.length / nodeLabels.length) + 1));
-      if (newLabel) {
-        nodes.value.push({
-          id: nodes.value.length,
-          label: newLabel,
-          x: pos.x,
-          y: pos.y
-        });
-        nodeCount.value = nodes.value.length;
-        drawGraph();
-        statusMessage.value = `✅ Nodo ${newLabel} creado`;
-        statusTone.value = "success";
-        setTimeout(() => statusMessage.value = "", 1500);
-      }
-    }
+    // Seleccionar nodo como origen
+    selectSourceNode(node.id);
   }
 };
 
@@ -762,7 +768,8 @@ const importData = (event) => {
         previous.value = [];
         pathEdges.value = [];
         steps.value = [];
-        drawGraph();
+        distancesTable.value = [];
+        nextTick(() => drawGraph());
         statusMessage.value = "✅ Grafo importado exitosamente";
         statusTone.value = "success";
       } else {
@@ -786,10 +793,13 @@ const resizeCanvas = () => {
   }
 };
 
+// Inicializar
 onMounted(() => {
   loadExample();
   window.addEventListener("resize", resizeCanvas);
-  setTimeout(resizeCanvas, 100);
+  setTimeout(() => {
+    resizeCanvas();
+  }, 100);
   
   if (canvasRef.value) {
     canvasRef.value.addEventListener("mousedown", handleMouseDown);
@@ -815,6 +825,72 @@ watch(nodeCount, () => {
 </script>
 
 <style scoped>
+/* Mantén todos los estilos anteriores, solo agrego los nuevos */
+
+.origen-selector {
+  margin-top: 4px;
+}
+
+.origen-selector label {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.origen-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.origen-btn {
+  width: 50px;
+  padding: 8px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.origen-btn:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.origen-btn.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  color: white;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-message span {
+  font-size: 3rem;
+}
+
+.empty-message p {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+/* Resto de estilos igual que antes */
 * {
   box-sizing: border-box;
 }
@@ -826,7 +902,6 @@ watch(nodeCount, () => {
   position: relative;
 }
 
-/* Hero Section */
 .hero-section {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -868,14 +943,12 @@ watch(nodeCount, () => {
   background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
-/* Main Layout */
 .main-layout {
   display: grid;
-  grid-template-columns: 320px 1fr 420px;
+  grid-template-columns: 340px 1fr 420px;
   gap: 24px;
 }
 
-/* Config Card */
 .config-card {
   background: white;
   border-radius: 24px;
@@ -1094,7 +1167,6 @@ watch(nodeCount, () => {
   color: #004085;
 }
 
-/* Graph Card */
 .graph-card {
   background: white;
   border-radius: 24px;
@@ -1130,12 +1202,6 @@ watch(nodeCount, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-}
-
-.graph-instructions span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .graph-pills {
@@ -1201,23 +1267,11 @@ watch(nodeCount, () => {
   border-radius: 50%;
 }
 
-.source-color {
-  background: #ef4444;
-}
+.source-color { background: #ef4444; }
+.path-color { background: #10b981; }
+.normal-color { background: #94a3b8; }
+.node-color { background: #3b82f6; }
 
-.path-color {
-  background: #10b981;
-}
-
-.normal-color {
-  background: #94a3b8;
-}
-
-.node-color {
-  background: #3b82f6;
-}
-
-/* Results Card */
 .results-card {
   background: white;
   border-radius: 24px;
@@ -1285,12 +1339,6 @@ watch(nodeCount, () => {
   font-size: 0.9rem;
   font-weight: 600;
   color: #333;
-}
-
-.card-header p {
-  margin: 0;
-  font-size: 0.7rem;
-  color: #666;
 }
 
 .source-info {
@@ -1421,10 +1469,6 @@ watch(nodeCount, () => {
   color: #3b82f6;
 }
 
-.dist-cell {
-  font-weight: 500;
-}
-
 .dist-cell.infinite-cell {
   color: #ef4444;
 }
@@ -1463,160 +1507,13 @@ watch(nodeCount, () => {
 
 .step-content {
   flex: 1;
-}
-
-.step-content p {
-  margin: 0;
   font-size: 0.75rem;
   color: #555;
   line-height: 1.5;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
-}
-
-.help-modal {
-  background: white;
-  border-radius: 32px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.3s ease;
-}
-
-.modal-header {
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.close-modal {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 1.3rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-modal:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.help-content-detailed {
-  padding: 8px;
-}
-
-.help-section {
-  margin-bottom: 24px;
-}
-
-.help-section h3 {
-  color: #667eea;
-  font-size: 1rem;
-  margin: 0 0 12px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.steps-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.step-detail {
-  display: flex;
-  gap: 12px;
-}
-
-.step-num {
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-
-.step-text {
-  flex: 1;
-  color: #555;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-.help-section ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.help-section li {
-  margin: 6px 0;
-  color: #555;
-  font-size: 0.85rem;
-}
-
-.help-note-box {
-  padding: 12px;
-  background: #fef3c7;
-  border-left: 4px solid #f59e0b;
-  border-radius: 8px;
-  color: #92400e;
-  font-size: 0.8rem;
 }
 
 .hidden-input {
   display: none;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes slideIn {
@@ -1632,49 +1529,16 @@ watch(nodeCount, () => {
 }
 
 @media (max-width: 1024px) {
-  .main-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .config-card, .results-card {
-    position: static;
-  }
-  
-  .hero-section {
-    flex-direction: column;
-    text-align: center;
-  }
+  .main-layout { grid-template-columns: 1fr; }
+  .config-card, .results-card { position: static; }
+  .hero-section { flex-direction: column; text-align: center; }
 }
 
 @media (max-width: 768px) {
-  .dijkstra-page {
-    padding: 16px;
-  }
-  
-  .hero-section {
-    padding: 24px;
-  }
-  
-  .hero-content h1 {
-    font-size: 1.5rem;
-  }
-  
-  .graph-container :deep(.graph-canvas) {
-    height: 350px;
-  }
-  
-  .graph-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .distances-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .graph-instructions {
-    flex-direction: column;
-    gap: 8px;
-  }
+  .dijkstra-page { padding: 16px; }
+  .hero-section { padding: 24px; }
+  .hero-content h1 { font-size: 1.5rem; }
+  .graph-canvas { height: 350px; }
+  .distances-grid { grid-template-columns: 1fr; }
 }
 </style>
