@@ -45,6 +45,14 @@
         <span class="tab-icon">🔄</span>
         <span>Sort - Ordenamiento</span>
       </button>
+      <button
+        @click="activeTab = 'tree'"
+        :class="{ active: activeTab === 'tree' }"
+        class="tab-btn"
+      >
+        <span class="tab-icon">🌳</span>
+        <span>Árbol Binario</span>
+      </button>
 
       <button
         @click="activeTab = 'kruskal'"
@@ -95,6 +103,10 @@
     <div v-else-if="activeTab === 'dijkstra'" class="dijkstra-layout">
       <DijkstraView />
     </div>
+
+    <div v-else-if="activeTab === 'tree'" class="tree-layout">
+      <TreeView />
+    </div>
   </div>
 </template>
 
@@ -108,6 +120,7 @@ import NorthwestView from "./NorthwestView.vue";
 import SortView from "./SortView.vue";
 import KruskalView from "./KruskalView.vue";
 import DijkstraView from "./DijkstraView.vue";
+import TreeView from "./TreeView.vue";
 
 const activeTab = ref("editor");
 </script>
@@ -162,7 +175,6 @@ const activeTab = ref("editor");
   font-size: 1.1rem;
 }
 
-/* Layout del editor - DOS COLUMNAS FIJAS */
 .editor-layout {
   display: flex;
   flex: 1;
@@ -176,46 +188,46 @@ const activeTab = ref("editor");
   position: relative;
 }
 
-/* Layout de Johnson */
 .johnson-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-/* Layout de Asignación */
 .asignacion-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-/* Layout de Esquina Noroeste */
 .northwest-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #0f766e 0%, #164e63 100%);
 }
 
-/* Layout de Sort - Ordenamiento */
 .sort-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
 }
 
-/* Layout de Kruskal - Árbol de Expansión Mínima */
 .kruskal-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
 }
 
-/* Layout de Dijkstra - Camino Más Corto */
 .dijkstra-layout {
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.tree-layout {
+  flex: 1;
+  overflow: auto;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 @media (max-width: 768px) {
@@ -223,11 +235,11 @@ const activeTab = ref("editor");
     padding: 10px 16px;
     font-size: 0.85rem;
   }
-  
+
   .tab-icon {
     font-size: 0.9rem;
   }
-  
+
   .editor-layout {
     flex-direction: column;
   }

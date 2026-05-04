@@ -2,11 +2,11 @@
   <div class="tree-page">
     <div class="hero-section">
       <div class="hero-content">
-        <h1>Árbol Binario - Recorridos</h1>
+        <h1>🌳 Árbol Binario - Recorridos</h1>
         <p>Preorder, Inorder y Postorder - Construcción dinámica paso a paso</p>
       </div>
-      <div class="algorithm-badge badge-tree">
-        🌳 Árbol Binario
+      <div class="algorithm-badge" :class="getBadgeClass()">
+        {{ getTreeTypeName() }}
       </div>
     </div>
 
@@ -14,146 +14,181 @@
       <!-- Panel de configuración -->
       <div class="config-card">
         <div class="config-header">
-          <h3>Configuración</h3>
+          <h3>⚙️ Configuración</h3>
         </div>
 
         <div class="config-group">
-          <div class="dimension-item full-width">
-            <label>Modo de entrada</label>
-            <div class="mode-selector">
-              <button 
-                @click="inputMode = 'dynamic'" 
-                class="mode-btn" 
-                :class="{ active: inputMode === 'dynamic' }">
-                🔢 Agregar Números
-              </button>
-              <button 
-                @click="inputMode = 'sequences'" 
-                class="mode-btn" 
-                :class="{ active: inputMode === 'sequences' }">
-                📝 Ingresar Recorridos
-              </button>
-            </div>
+          <div class="mode-selector">
+            <button
+              @click="inputMode = 'dynamic'"
+              class="mode-btn"
+              :class="{ active: inputMode === 'dynamic' }"
+            >
+              🔢 Agregar Números
+            </button>
+            <button
+              @click="inputMode = 'sequences'"
+              class="mode-btn"
+              :class="{ active: inputMode === 'sequences' }"
+            >
+              📝 Ingresar Recorridos
+            </button>
           </div>
 
-          <!-- Modo: Agregar Números Dinámicamente -->
+          <!-- Modo Dinámico -->
           <div v-if="inputMode === 'dynamic'" class="dynamic-mode">
             <div class="input-group">
-              <label>Ingresar nuevo número</label>
+              <label>📌 Nuevo valor</label>
               <div class="number-input-group">
-                <input 
-                  v-model.number="newNodeValue" 
-                  type="number" 
+                <input
+                  v-model.number="newNodeValue"
+                  type="number"
                   class="number-input"
                   placeholder="Ej: 50"
-                  @keyup.enter="addNode">
+                  @keyup.enter="addNode"
+                />
                 <button @click="addNode" class="btn-add">➕ Agregar</button>
               </div>
             </div>
 
             <div class="tree-type-buttons">
-              <button 
-                @click="treeType = 'bst'" 
-                class="type-btn" 
-                :class="{ active: treeType === 'bst' }">
-                🌲 Árbol BST
+              <button
+                @click="treeType = 'bst'"
+                class="type-btn"
+                :class="{ active: treeType === 'bst' }"
+              >
+                🌲 BST
               </button>
-              <button 
-                @click="treeType = 'complete'" 
-                class="type-btn" 
-                :class="{ active: treeType === 'complete' }">
-                🌳 Árbol Completo
+              <button
+                @click="treeType = 'complete'"
+                class="type-btn"
+                :class="{ active: treeType === 'complete' }"
+              >
+                🌳 Completo
               </button>
-              <button 
-                @click="treeType = 'simple'" 
-                class="type-btn" 
-                :class="{ active: treeType === 'simple' }">
-                🌿 Árbol Simple
+              <button
+                @click="treeType = 'simple'"
+                class="type-btn"
+                :class="{ active: treeType === 'simple' }"
+              >
+                🌿 Simple
               </button>
             </div>
 
             <div class="action-buttons">
-              <button @click="generateRandomNode" class="btn-random">🎲 Aleatorio</button>
-              <button @click="generateBalanced" class="btn-balanced">⚖️ Balanceado</button>
-              <button @click="clearAllNodes" class="btn-clear">🗑️ Limpiar Todo</button>
+              <button @click="generateRandomNode" class="btn-random">
+                🎲 Aleatorio
+              </button>
+              <button @click="generateBalancedSample" class="btn-balanced">
+                ⚖️ Ejemplo
+              </button>
+              <button @click="clearAllNodes" class="btn-clear">
+                🗑️ Limpiar
+              </button>
             </div>
 
             <div v-if="nodeValuesList.length > 0" class="values-list">
-              <label>Valores ingresados:</label>
+              <label
+                >📋 Valores ingresados ({{ nodeValuesList.length }}):</label
+              >
               <div class="values-badges">
-                <span v-for="(val, idx) in nodeValuesList" :key="idx" class="value-badge">
+                <span
+                  v-for="(val, idx) in nodeValuesList"
+                  :key="idx"
+                  class="value-badge"
+                >
                   {{ val }}
-                  <button @click="removeNodeAtIndex(idx)" class="remove-badge">×</button>
+                  <button @click="removeNodeAtIndex(idx)" class="remove-badge">
+                    ×
+                  </button>
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Modo: Ingresar Recorridos -->
+          <!-- Modo Secuencias -->
           <div v-else class="sequences-mode">
             <div class="input-group">
-              <label>Preorder (raíz → izquierda → derecha)</label>
-              <input 
-                v-model="preorderInput" 
-                type="text" 
+              <label>📋 Preorder (raíz → izquierda → derecha)</label>
+              <input
+                v-model="preorderInput"
+                type="text"
                 class="sequence-input"
-                placeholder="Ej: 50,30,20,40,70,60,80">
+                placeholder="Ej: 50,30,20,40,70,60,80"
+              />
             </div>
 
             <div class="input-group">
-              <label>Inorder (izquierda → raíz → derecha)</label>
-              <input 
-                v-model="inorderInput" 
-                type="text" 
+              <label>📋 Inorder (izquierda → raíz → derecha)</label>
+              <input
+                v-model="inorderInput"
+                type="text"
                 class="sequence-input"
-                placeholder="Ej: 20,30,40,50,60,70,80">
+                placeholder="Ej: 20,30,40,50,60,70,80"
+              />
             </div>
 
             <div class="input-group">
-              <label>Postorder (izquierda → derecha → raíz)</label>
-              <input 
-                v-model="postorderInput" 
-                type="text" 
+              <label>📋 Postorder (izquierda → derecha → raíz)</label>
+              <input
+                v-model="postorderInput"
+                type="text"
                 class="sequence-input"
-                placeholder="Ej: 20,40,30,60,80,70,50">
+                placeholder="Ej: 20,40,30,60,80,70,50"
+              />
             </div>
 
             <div class="action-buttons">
-              <button @click="buildFromSequences" class="btn-construct">🌲 Construir Árbol</button>
+              <button @click="buildFromSequences" class="btn-construct">
+                🌲 Construir Árbol
+              </button>
               <button @click="clearSequences" class="btn-clear">Limpiar</button>
             </div>
           </div>
 
-          <!-- Exportar/Importar -->
           <div class="import-export-section">
             <div class="file-name-input">
-              <label>Nombre del archivo</label>
-              <input type="text" v-model="exportFileName" class="file-name-field" placeholder="mi_arbol">
+              <label>📁 Nombre del archivo</label>
+              <input
+                type="text"
+                v-model="exportFileName"
+                class="file-name-field"
+                placeholder="mi_arbol"
+              />
             </div>
             <div class="import-export-buttons">
-              <button @click="exportData" class="btn-export">📤 Exportar</button>
+              <button @click="exportData" class="btn-export">
+                📤 Exportar
+              </button>
               <label class="btn-import">
                 📥 Importar
-                <input type="file" accept=".json" @change="importData" style="display: none">
+                <input
+                  type="file"
+                  accept=".json"
+                  @change="importData"
+                  style="display: none"
+                />
               </label>
             </div>
           </div>
 
           <button @click="resetTree" class="btn-reset">⟳ Reiniciar</button>
-          <button @click="showHelpModal = true" class="btn-help">Ayuda</button>
+          <button @click="showHelpModal = true" class="btn-help">
+            ❓ Ayuda
+          </button>
         </div>
 
         <div class="stats-display">
           <div class="stat-item">
-            <span class="stat-label">Nodos</span>
+            <span class="stat-label">📊 Nodos</span>
             <span class="stat-value">{{ nodeCount }}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Altura</span>
+            <span class="stat-label">📏 Altura</span>
             <span class="stat-value">{{ treeHeight }}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Nivel</span>
+            <span class="stat-label">🔢 Niveles</span>
             <span class="stat-value">{{ treeLevels }}</span>
           </div>
         </div>
@@ -166,20 +201,18 @@
       <!-- Visualización del árbol -->
       <div class="visualization-card">
         <div class="visualization-header">
-          <h3>Visualización del Árbol</h3>
+          <h3>🌲 Visualización del Árbol</h3>
           <span class="tree-hint">{{ treeTypeHint }}</span>
         </div>
-        
+
         <div class="tree-container" ref="treeContainer">
-          <svg 
-            :viewBox="`0 0 ${svgWidth} ${svgHeight}`" 
+          <svg
+            :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
             class="tree-svg"
-            @mousemove="handleMouseMove"
-            @mouseleave="handleMouseLeave">
-            
-            <!-- Aristas -->
+            v-if="root"
+          >
             <g class="edges-group">
-              <line 
+              <line
                 v-for="edge in edges"
                 :key="'edge-' + edge.id"
                 :x1="edge.x1"
@@ -188,28 +221,29 @@
                 :y2="edge.y2"
                 class="tree-edge"
                 stroke="#cbd5e1"
-                stroke-width="2"/>
+                stroke-width="2"
+              />
             </g>
-            
-            <!-- Nodos -->
+
             <g class="nodes-group">
               <g v-for="node in nodePositions" :key="'node-' + node.id">
-                <circle 
+                <circle
                   :cx="node.x"
                   :cy="node.y"
                   :class="{
                     'node-highlighted': highlightedNode === node.id,
-                    'node-root': node.id === rootId
+                    'node-root': node.id === rootId,
                   }"
                   r="28"
-                  fill="#3b82f6"
+                  :fill="getNodeColor(node.id)"
                   stroke="#fff"
                   stroke-width="2"
                   @click="selectNode(node.id)"
                   @mouseenter="highlightNode(node.id)"
                   @mouseleave="clearHighlight"
-                  style="cursor: pointer; transition: all 0.3s ease;"/>
-                <text 
+                  style="cursor: pointer; transition: all 0.3s ease"
+                />
+                <text
                   :x="node.x"
                   :y="node.y"
                   class="node-label"
@@ -218,27 +252,49 @@
                   fill="white"
                   font-size="14px"
                   font-weight="bold"
-                  style="pointer-events: none;">
+                  pointer-events="none"
+                >
                   {{ node.value }}
                 </text>
               </g>
             </g>
           </svg>
+          <div v-else class="empty-tree">
+            <span>🌳</span>
+            <p>El árbol está vacío. Agrega valores para comenzar.</p>
+          </div>
         </div>
 
-        <!-- Recorridos del árbol -->
         <div class="traversals-panel">
-          <div class="traversal-card" :class="{ active: activeTraversal === 'preorder' }" @click="showTraversal('preorder')">
+          <div
+            class="traversal-card"
+            :class="{ active: activeTraversal === 'preorder' }"
+            @click="activeTraversal = 'preorder'"
+          >
             <h4>Preorder</h4>
-            <div class="traversal-values">{{ formatTraversal(preorderResult) }}</div>
+            <div class="traversal-values">
+              {{ formatTraversal(preorderResult) }}
+            </div>
           </div>
-          <div class="traversal-card" :class="{ active: activeTraversal === 'inorder' }" @click="showTraversal('inorder')">
+          <div
+            class="traversal-card"
+            :class="{ active: activeTraversal === 'inorder' }"
+            @click="activeTraversal = 'inorder'"
+          >
             <h4>Inorder</h4>
-            <div class="traversal-values">{{ formatTraversal(inorderResult) }}</div>
+            <div class="traversal-values">
+              {{ formatTraversal(inorderResult) }}
+            </div>
           </div>
-          <div class="traversal-card" :class="{ active: activeTraversal === 'postorder' }" @click="showTraversal('postorder')">
+          <div
+            class="traversal-card"
+            :class="{ active: activeTraversal === 'postorder' }"
+            @click="activeTraversal = 'postorder'"
+          >
             <h4>Postorder</h4>
-            <div class="traversal-values">{{ formatTraversal(postorderResult) }}</div>
+            <div class="traversal-values">
+              {{ formatTraversal(postorderResult) }}
+            </div>
           </div>
         </div>
 
@@ -249,42 +305,51 @@
           </div>
           <div class="legend-item">
             <div class="legend-color node-color"></div>
-            <span>Nodo</span>
+            <span>Nodo normal</span>
           </div>
           <div class="legend-item">
             <div class="legend-color highlighted-color"></div>
             <span>Seleccionado</span>
           </div>
         </div>
-        
-        <div v-if="validationResult" class="validation-panel" :class="validationResult.isValid ? 'valid' : 'invalid'">
-          <span class="validation-icon">{{ validationResult.isValid ? '✓' : '✗' }}</span>
-          <span>{{ validationResult.message }}</span>
-        </div>
       </div>
     </div>
 
-    <!-- Modal de ayuda -->
     <Teleport to="body">
-      <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
+      <div
+        v-if="showHelpModal"
+        class="modal-overlay"
+        @click.self="showHelpModal = false"
+      >
         <div class="help-modal">
           <div class="modal-header">
-            <h2>Árbol Binario - Guía Rápida</h2>
-            <button class="close-modal" @click="showHelpModal = false">✕</button>
+            <h2>📖 Guía del Árbol Binario</h2>
+            <button class="close-modal" @click="showHelpModal = false">
+              ✕
+            </button>
           </div>
           <div class="modal-body">
             <div class="help-section">
-              <h3>🎯 Modo Agregar Números:</h3>
+              <h3>🎯 Modos de construcción:</h3>
               <ul>
-                <li><strong>BST:</strong> Los números se organizan automáticamente (menores a la izquierda, mayores a la derecha)</li>
-                <li><strong>Completo:</strong> Los números se agregan llenando niveles de izquierda a derecha</li>
-                <li><strong>Simple:</strong> Los números se agregan como hijos derechos (árbol degenerado)</li>
+                <li>
+                  <strong>BST:</strong> Los números se organizan automáticamente
+                  (menores a la izquierda, mayores a la derecha)
+                </li>
+                <li>
+                  <strong>Completo:</strong> Los números se agregan llenando
+                  niveles de izquierda a derecha
+                </li>
+                <li>
+                  <strong>Simple:</strong> Los números se agregan como hijos
+                  derechos (árbol degenerado)
+                </li>
               </ul>
 
               <h3>📝 Modo Recorridos:</h3>
               <ul>
-                <li>Ingrese 2 de los 3 recorridos para construir el árbol</li>
-                <li>Los números deben estar separados por comas</li>
+                <li>Ingrese 2 de los 3 recorridos separados por comas</li>
+                <li>El sistema construirá el árbol automáticamente</li>
                 <li>Ejemplo: "50,30,20,40,70,60,80"</li>
               </ul>
 
@@ -306,19 +371,19 @@
 import { ref, computed, onMounted, watch } from "vue";
 
 // Estado
-const inputMode = ref('dynamic');
-const treeType = ref('bst');
+const inputMode = ref("dynamic");
+const treeType = ref("bst");
 const newNodeValue = ref(null);
 const nodeValuesList = ref([]);
-const preorderInput = ref('');
-const inorderInput = ref('');
-const postorderInput = ref('');
-const exportFileName = ref('arbol_binario');
+const preorderInput = ref("");
+const inorderInput = ref("");
+const postorderInput = ref("");
+const exportFileName = ref("arbol_binario");
 const showHelpModal = ref(false);
-const statusMessage = ref('');
-const statusTone = ref('');
+const statusMessage = ref("");
+const statusTone = ref("");
 const highlightedNode = ref(null);
-const activeTraversal = ref('preorder');
+const activeTraversal = ref("preorder");
 
 // Estructura del árbol
 const root = ref(null);
@@ -331,21 +396,13 @@ const edges = ref([]);
 const preorderResult = ref([]);
 const inorderResult = ref([]);
 const postorderResult = ref([]);
-const validationResult = ref(null);
 
 // SVG
 const svgWidth = 1000;
 const svgHeight = 500;
 const treeContainer = ref(null);
 
-const treeTypeHint = computed(() => {
-  const hints = {
-    bst: '🌲 Árbol Binario de Búsqueda (izquierda < raíz < derecha)',
-    complete: '🌳 Árbol Completo (niveles llenos de izquierda a derecha)',
-    simple: '🌿 Árbol Simple (todos los nodos a la derecha)'
-  };
-  return hints[treeType.value] || hints.bst;
-});
+let nextNodeId = 0;
 
 // Clase Nodo
 class TreeNode {
@@ -359,9 +416,34 @@ class TreeNode {
   }
 }
 
-let nextNodeId = 0;
+// Funciones auxiliares
+const getTreeTypeName = () => {
+  const names = { bst: "BST", complete: "Completo", simple: "Simple" };
+  return names[treeType.value];
+};
 
-// ============ FUNCIONES DEL ÁRBOL ============
+const getBadgeClass = () => {
+  const classes = {
+    bst: "badge-bst",
+    complete: "badge-complete",
+    simple: "badge-simple",
+  };
+  return classes[treeType.value];
+};
+
+const treeTypeHint = computed(() => {
+  const hints = {
+    bst: "🌲 Árbol Binario de Búsqueda",
+    complete: "🌳 Árbol Completo (niveles llenos de izquierda a derecha)",
+    simple: "🌿 Árbol Simple (todos los nodos a la derecha)",
+  };
+  return hints[treeType.value] || hints.bst;
+});
+
+const getNodeColor = (nodeId) => {
+  if (nodeId === rootId.value) return "#ef4444";
+  return "#3b82f6";
+};
 
 // Insertar en BST
 const insertBST = (node, value) => {
@@ -374,64 +456,63 @@ const insertBST = (node, value) => {
   return node;
 };
 
-// Insertar en árbol completo (por niveles)
-const insertComplete = (root, value) => {
-  if (!root) return new TreeNode(value, nextNodeId++);
-  
-  const queue = [root];
+// Insertar en árbol completo
+const insertComplete = (rootNode, value) => {
+  if (!rootNode) return new TreeNode(value, nextNodeId++);
+  const queue = [rootNode];
   while (queue.length > 0) {
     const current = queue.shift();
     if (!current.left) {
       current.left = new TreeNode(value, nextNodeId++);
-      return root;
+      return rootNode;
     } else if (!current.right) {
       current.right = new TreeNode(value, nextNodeId++);
-      return root;
+      return rootNode;
     } else {
       queue.push(current.left);
       queue.push(current.right);
     }
   }
-  return root;
+  return rootNode;
 };
 
-// Insertar en árbol simple (todos a la derecha)
-const insertSimple = (root, value) => {
-  if (!root) return new TreeNode(value, nextNodeId++);
-  let current = root;
+// Insertar en árbol simple
+const insertSimple = (rootNode, value) => {
+  if (!rootNode) return new TreeNode(value, nextNodeId++);
+  let current = rootNode;
   while (current.right) {
     current = current.right;
   }
   current.right = new TreeNode(value, nextNodeId++);
-  return root;
+  return rootNode;
 };
 
-// Agregar nodo según el tipo seleccionado
+// Agregar nodo
 const addNode = () => {
   const value = newNodeValue.value;
-  if (value === null || value === '' || isNaN(value)) {
-    statusMessage.value = 'Ingrese un número válido';
-    statusTone.value = 'error';
-    setTimeout(() => statusMessage.value = '', 2000);
+  if (value === null || value === "" || isNaN(value)) {
+    statusMessage.value = "Ingrese un número válido";
+    statusTone.value = "error";
+    setTimeout(() => (statusMessage.value = ""), 2000);
     return;
   }
-  
-  if (treeType.value === 'bst') {
+
+  if (treeType.value === "bst") {
     root.value = insertBST(root.value, value);
-  } else if (treeType.value === 'complete') {
+  } else if (treeType.value === "complete") {
     root.value = insertComplete(root.value, value);
   } else {
     root.value = insertSimple(root.value, value);
   }
-  
+
   nodeValuesList.value.push(value);
   updateTreeInfo();
   updateVisualization();
-  
+
   newNodeValue.value = null;
-  statusMessage.value = `Nodo ${value} agregado correctamente`;
-  statusTone.value = 'success';
-  setTimeout(() => statusMessage.value = '', 1500);
+  statusMessage.value = `✅ Nodo ${value} agregado`;
+  statusTone.value = "success";
+  setTimeout(() => (statusMessage.value = ""), 1500);
 };
 
 const removeNodeAtIndex = (index) => {
@@ -445,18 +526,18 @@ const clearAllNodes = () => {
   nextNodeId = 0;
   updateTreeInfo();
   updateVisualization();
-  statusMessage.value = 'Todos los nodos han sido eliminados';
-  statusTone.value = 'neutral';
-  setTimeout(() => statusMessage.value = '', 1500);
+  statusMessage.value = "🗑️ Todos los nodos eliminados";
+  statusTone.value = "neutral";
+  setTimeout(() => (statusMessage.value = ""), 1500);
 };
 
 const rebuildTreeFromList = () => {
   root.value = null;
   nextNodeId = 0;
   for (const val of nodeValuesList.value) {
-    if (treeType.value === 'bst') {
+    if (treeType.value === "bst") {
       root.value = insertBST(root.value, val);
-    } else if (treeType.value === 'complete') {
+    } else if (treeType.value === "complete") {
       root.value = insertComplete(root.value, val);
     } else {
       root.value = insertSimple(root.value, val);
@@ -472,15 +553,15 @@ const generateRandomNode = () => {
   addNode();
 };
 
-const generateBalanced = () => {
+const generateBalancedSample = () => {
   const balancedValues = [50, 30, 70, 20, 40, 60, 80];
   root.value = null;
   nodeValuesList.value = [];
   nextNodeId = 0;
   for (const val of balancedValues) {
-    if (treeType.value === 'bst') {
+    if (treeType.value === "bst") {
       root.value = insertBST(root.value, val);
-    } else if (treeType.value === 'complete') {
+    } else if (treeType.value === "complete") {
       root.value = insertComplete(root.value, val);
     } else {
       root.value = insertSimple(root.value, val);
@@ -489,54 +570,57 @@ const generateBalanced = () => {
   }
   updateTreeInfo();
   updateVisualization();
-  statusMessage.value = 'Árbol balanceado generado';
-  statusTone.value = 'success';
-  setTimeout(() => statusMessage.value = '', 2000);
+  statusMessage.value = "⚖️ Árbol balanceado generado";
+  statusTone.value = "success";
+  setTimeout(() => (statusMessage.value = ""), 2000);
 };
 
 // Construir desde recorridos
 const parseInput = (input) => {
   if (!input.trim()) return [];
-  return input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  return input
+    .split(",")
+    .map((s) => parseInt(s.trim()))
+    .filter((n) => !isNaN(n));
 };
 
 const buildFromPreIn = (preorder, inorder) => {
   if (preorder.length === 0 || inorder.length === 0) return null;
   if (preorder.length !== inorder.length) return null;
-  
+
   const rootValue = preorder[0];
   const rootIndex = inorder.indexOf(rootValue);
   if (rootIndex === -1) return null;
-  
+
   const leftInorder = inorder.slice(0, rootIndex);
   const rightInorder = inorder.slice(rootIndex + 1);
   const leftPreorder = preorder.slice(1, 1 + leftInorder.length);
   const rightPreorder = preorder.slice(1 + leftInorder.length);
-  
+
   const node = new TreeNode(rootValue, nextNodeId++);
   node.left = buildFromPreIn(leftPreorder, leftInorder);
   node.right = buildFromPreIn(rightPreorder, rightInorder);
-  
+
   return node;
 };
 
 const buildFromInPost = (inorder, postorder) => {
   if (inorder.length === 0 || postorder.length === 0) return null;
   if (inorder.length !== postorder.length) return null;
-  
+
   const rootValue = postorder[postorder.length - 1];
   const rootIndex = inorder.indexOf(rootValue);
   if (rootIndex === -1) return null;
-  
+
   const leftInorder = inorder.slice(0, rootIndex);
   const rightInorder = inorder.slice(rootIndex + 1);
   const leftPostorder = postorder.slice(0, leftInorder.length);
   const rightPostorder = postorder.slice(leftInorder.length, -1);
-  
+
   const node = new TreeNode(rootValue, nextNodeId++);
   node.left = buildFromInPost(leftInorder, leftPostorder);
   node.right = buildFromInPost(rightInorder, rightPostorder);
-  
+
   return node;
 };
 
@@ -544,57 +628,56 @@ const buildFromSequences = () => {
   const preorder = parseInput(preorderInput.value);
   const inorder = parseInput(inorderInput.value);
   const postorder = parseInput(postorderInput.value);
-  
+
   let tree = null;
-  let message = '';
-  let isValid = false;
-  
-  if (preorder.length > 0 && inorder.length > 0 && preorder.length === inorder.length) {
+  let message = "";
+
+  if (
+    preorder.length > 0 &&
+    inorder.length > 0 &&
+    preorder.length === inorder.length
+  ) {
     nextNodeId = 0;
     tree = buildFromPreIn(preorder, inorder);
     if (tree) {
-      isValid = true;
-      message = 'Árbol construido desde Preorder + Inorder';
+      message = "✅ Árbol construido desde Preorder + Inorder";
       nodeValuesList.value = inorder;
     }
-  } else if (inorder.length > 0 && postorder.length > 0 && inorder.length === postorder.length) {
+  } else if (
+    inorder.length > 0 &&
+    postorder.length > 0 &&
+    inorder.length === postorder.length
+  ) {
     nextNodeId = 0;
     tree = buildFromInPost(inorder, postorder);
     if (tree) {
-      isValid = true;
-      message = 'Árbol construido desde Inorder + Postorder';
+      message = "✅ Árbol construido desde Inorder + Postorder";
       nodeValuesList.value = inorder;
     }
   }
-  
-  if (tree && isValid) {
+
+  if (tree) {
     root.value = tree;
     updateTreeInfo();
     updateVisualization();
-    validationResult.value = { isValid: true, message };
     statusMessage.value = message;
-    statusTone.value = 'success';
+    statusTone.value = "success";
   } else {
-    validationResult.value = { 
-      isValid: false, 
-      message: 'No se pudo construir el árbol. Verifique que los recorridos sean consistentes.' 
-    };
-    statusMessage.value = validationResult.value.message;
-    statusTone.value = 'error';
+    statusMessage.value =
+      "❌ No se pudo construir el árbol. Verifica los recorridos.";
+    statusTone.value = "error";
   }
-  
-  setTimeout(() => { if (statusMessage.value === message) statusMessage.value = ''; }, 3000);
+
+  setTimeout(() => (statusMessage.value = ""), 3000);
 };
 
 const clearSequences = () => {
-  preorderInput.value = '';
-  inorderInput.value = '';
-  postorderInput.value = '';
-  validationResult.value = null;
+  preorderInput.value = "";
+  inorderInput.value = "";
+  postorderInput.value = "";
 };
 
-// ============ RECORRIDOS ============
-
+// Recorridos
 const getPreorder = (node, result = []) => {
   if (!node) return result;
   result.push(node.value);
@@ -619,8 +702,7 @@ const getPostorder = (node, result = []) => {
   return result;
 };
 
-// ============ ESTADÍSTICAS ============
-
+// Estadísticas
 const getHeight = (node) => {
   if (!node) return 0;
   return 1 + Math.max(getHeight(node.left), getHeight(node.right));
@@ -636,56 +718,55 @@ const updateTreeInfo = () => {
   treeHeight.value = getHeight(root.value);
   treeLevels.value = Math.max(1, Math.ceil(Math.log2(nodeCount.value + 1)));
   rootId.value = root.value?.id || null;
-  
+
   preorderResult.value = getPreorder(root.value);
   inorderResult.value = getInorder(root.value);
   postorderResult.value = getPostorder(root.value);
 };
 
-// ============ POSICIONAMIENTO ============
-
+// Posicionamiento
 const calculatePositions = (node, level = 0, offset = 0, positions = []) => {
   if (!node) return;
-  
+
   const levelWidth = Math.pow(2, level);
   const x = (offset + 0.5) * (svgWidth / levelWidth);
   const y = 60 + level * 70;
-  
+
   node.x = x;
   node.y = y;
   positions.push({ id: node.id, value: node.value, x, y, level });
-  
+
   calculatePositions(node.left, level + 1, offset * 2, positions);
   calculatePositions(node.right, level + 1, offset * 2 + 1, positions);
-  
+
   return positions;
 };
 
 const calculateEdges = (node, edgesList = []) => {
   if (!node) return edgesList;
-  
+
   if (node.left) {
     edgesList.push({
       id: `${node.id}-${node.left.id}`,
       x1: node.x,
       y1: node.y + 20,
       x2: node.left.x,
-      y2: node.left.y - 20
+      y2: node.left.y - 20,
     });
     calculateEdges(node.left, edgesList);
   }
-  
+
   if (node.right) {
     edgesList.push({
       id: `${node.id}-${node.right.id}`,
       x1: node.x,
       y1: node.y + 20,
       x2: node.right.x,
-      y2: node.right.y - 20
+      y2: node.right.y - 20,
     });
     calculateEdges(node.right, edgesList);
   }
-  
+
   return edgesList;
 };
 
@@ -695,62 +776,70 @@ const updateVisualization = () => {
     edges.value = [];
     return;
   }
-  
+
   nodePositions.value = calculatePositions(root.value, 0, 0, []);
   edges.value = calculateEdges(root.value, []);
 };
 
-// ============ EXPORTAR/IMPORTAR ============
-
+// Exportar/Importar
 const exportData = () => {
+  if (nodeValuesList.value.length === 0) {
+    statusMessage.value = "No hay datos para exportar";
+    statusTone.value = "error";
+    setTimeout(() => (statusMessage.value = ""), 2000);
+    return;
+  }
+
   const data = {
     treeType: treeType.value,
     values: nodeValuesList.value,
     traversals: {
       preorder: preorderResult.value,
       inorder: inorderResult.value,
-      postorder: postorderResult.value
+      postorder: postorderResult.value,
     },
-    exportDate: new Date().toISOString()
+    exportDate: new Date().toISOString(),
   };
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${exportFileName.value || 'arbol'}.json`;
+  link.download = `${exportFileName.value || "arbol"}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  statusMessage.value = `Árbol exportado como ${exportFileName.value}.json`;
-  statusTone.value = 'success';
-  setTimeout(() => statusMessage.value = '', 2000);
+  statusMessage.value = `📁 Árbol exportado como ${exportFileName.value}.json`;
+  statusTone.value = "success";
+  setTimeout(() => (statusMessage.value = ""), 2000);
 };
 
 const importData = (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
-  
+
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
       if (data.values && Array.isArray(data.values)) {
-        treeType.value = data.treeType || 'bst';
+        treeType.value = data.treeType || "bst";
         nodeValuesList.value = data.values;
         rebuildTreeFromList();
-        statusMessage.value = 'Árbol importado exitosamente';
-        statusTone.value = 'success';
+        statusMessage.value = "✅ Árbol importado exitosamente";
+        statusTone.value = "success";
       } else {
-        throw new Error('Formato inválido');
+        throw new Error("Formato inválido");
       }
     } catch (error) {
-      statusMessage.value = 'Error al importar archivo';
-      statusTone.value = 'error';
+      statusMessage.value = "❌ Error al importar archivo";
+      statusTone.value = "error";
     }
-    setTimeout(() => statusMessage.value = '', 2000);
+    setTimeout(() => (statusMessage.value = ""), 2000);
   };
   reader.readAsText(file);
-  event.target.value = '';
+  event.target.value = "";
 };
 
 const resetTree = () => {
@@ -765,20 +854,21 @@ const resetTree = () => {
   preorderResult.value = [];
   inorderResult.value = [];
   postorderResult.value = [];
-  validationResult.value = null;
-  preorderInput.value = '';
-  inorderInput.value = '';
-  postorderInput.value = '';
+  preorderInput.value = "";
+  inorderInput.value = "";
+  postorderInput.value = "";
   newNodeValue.value = null;
-  statusMessage.value = 'Árbol reiniciado';
-  statusTone.value = 'neutral';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusMessage.value = "🔄 Árbol reiniciado";
+  statusTone.value = "neutral";
+  setTimeout(() => (statusMessage.value = ""), 2000);
 };
 
-// ============ INTERACCIONES ============
-
+// Interacciones
 const selectNode = (id) => {
   highlightedNode.value = id;
+  setTimeout(() => {
+    if (highlightedNode.value === id) highlightedNode.value = null;
+  }, 1500);
 };
 
 const highlightNode = (id) => {
@@ -786,44 +876,22 @@ const highlightNode = (id) => {
 };
 
 const clearHighlight = () => {
-  highlightedNode.value = null;
-};
-
-const showTraversal = (type) => {
-  activeTraversal.value = type;
+  setTimeout(() => {
+    if (highlightedNode.value !== null) highlightedNode.value = null;
+  }, 100);
 };
 
 const formatTraversal = (arr) => {
-  if (!arr || arr.length === 0) return 'Vacío';
-  return arr.join(' → ');
-};
-
-const handleMouseMove = () => {};
-const handleMouseLeave = () => {};
-
-// Ejemplo por defecto
-const loadExample = () => {
-  const exampleValues = [50, 30, 70, 20, 40, 60, 80];
-  for (const val of exampleValues) {
-    if (treeType.value === 'bst') {
-      root.value = insertBST(root.value, val);
-    } else if (treeType.value === 'complete') {
-      root.value = insertComplete(root.value, val);
-    } else {
-      root.value = insertSimple(root.value, val);
-    }
-    nodeValuesList.value.push(val);
-  }
-  updateTreeInfo();
-  updateVisualization();
+  if (!arr || arr.length === 0) return "Vacío";
+  return arr.join(" → ");
 };
 
 // Inicializar
 onMounted(() => {
-  loadExample();
+  generateBalancedSample();
 });
 
-// Watcher para cuando cambia el tipo de árbol
+// Watcher
 watch(treeType, () => {
   if (nodeValuesList.value.length > 0) {
     rebuildTreeFromList();
@@ -839,11 +907,10 @@ watch(treeType, () => {
 .tree-page {
   min-height: 100vh;
   padding: 32px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #56a6cb 100%);
   position: relative;
 }
 
-/* Hero Section */
 .hero-section {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -865,7 +932,7 @@ watch(treeType, () => {
 .hero-content h1 {
   font-size: 2rem;
   margin: 0 0 8px 0;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: linear-gradient(135deg, #11998e, #38ef7d);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -884,18 +951,24 @@ watch(treeType, () => {
   color: white;
 }
 
-.badge-tree {
+.badge-bst {
   background: linear-gradient(135deg, #11998e, #38ef7d);
 }
 
-/* Main Layout */
+.badge-complete {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.badge-simple {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
 .main-layout {
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 24px;
 }
 
-/* Config Card */
 .config-card {
   background: white;
   border-radius: 24px;
@@ -920,22 +993,6 @@ watch(treeType, () => {
   gap: 20px;
 }
 
-.dimension-item {
-  width: 100%;
-}
-
-.dimension-item.full-width {
-  width: 100%;
-}
-
-.dimension-item label {
-  display: block;
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 8px;
-}
-
-/* Modo Selector */
 .mode-selector {
   display: flex;
   gap: 12px;
@@ -958,7 +1015,6 @@ watch(treeType, () => {
   color: white;
 }
 
-/* Input Groups */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -1003,7 +1059,6 @@ watch(treeType, () => {
   border-color: #11998e;
 }
 
-/* Tree Type Buttons */
 .tree-type-buttons {
   display: flex;
   gap: 8px;
@@ -1026,13 +1081,16 @@ watch(treeType, () => {
   color: white;
 }
 
-/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
 }
 
-.btn-add, .btn-construct, .btn-random, .btn-balanced, .btn-clear {
+.btn-add,
+.btn-construct,
+.btn-random,
+.btn-balanced,
+.btn-clear {
   flex: 1;
   padding: 10px;
   border: none;
@@ -1042,12 +1100,14 @@ watch(treeType, () => {
   transition: all 0.2s;
 }
 
-.btn-add, .btn-construct {
+.btn-add,
+.btn-construct {
   background: linear-gradient(135deg, #11998e, #38ef7d);
   color: white;
 }
 
-.btn-random, .btn-balanced {
+.btn-random,
+.btn-balanced {
   background: #f8f9fa;
   border: 1px solid #ddd;
   color: #333;
@@ -1058,11 +1118,14 @@ watch(treeType, () => {
   color: white;
 }
 
-.btn-add:hover, .btn-construct:hover, .btn-random:hover, .btn-balanced:hover, .btn-clear:hover {
+.btn-add:hover,
+.btn-construct:hover,
+.btn-random:hover,
+.btn-balanced:hover,
+.btn-clear:hover {
   transform: translateY(-2px);
 }
 
-/* Values List */
 .values-list {
   margin-top: 12px;
   padding: 12px;
@@ -1098,7 +1161,7 @@ watch(treeType, () => {
 }
 
 .remove-badge {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
   border: none;
   color: white;
   width: 18px;
@@ -1112,10 +1175,9 @@ watch(treeType, () => {
 }
 
 .remove-badge:hover {
-  background: rgba(255,255,255,0.5);
+  background: rgba(255, 255, 255, 0.5);
 }
 
-/* Import/Export Section */
 .import-export-section {
   border-top: 1px solid #e0e0e0;
   padding-top: 16px;
@@ -1144,7 +1206,8 @@ watch(treeType, () => {
   gap: 12px;
 }
 
-.btn-export, .btn-import {
+.btn-export,
+.btn-import {
   flex: 1;
   padding: 10px;
   border: none;
@@ -1165,12 +1228,13 @@ watch(treeType, () => {
   display: inline-block;
 }
 
-.btn-export:hover, .btn-import:hover {
+.btn-export:hover,
+.btn-import:hover {
   transform: translateY(-2px);
 }
 
-/* Reset and Help Buttons */
-.btn-reset, .btn-help {
+.btn-reset,
+.btn-help {
   width: 100%;
   padding: 12px;
   background: #f8f9fa;
@@ -1190,12 +1254,12 @@ watch(treeType, () => {
   margin-top: 8px;
 }
 
-.btn-help:hover, .btn-reset:hover {
+.btn-help:hover,
+.btn-reset:hover {
   background: #e0e0e0;
   transform: translateY(-2px);
 }
 
-/* Stats Display */
 .stats-display {
   display: flex;
   gap: 12px;
@@ -1224,7 +1288,6 @@ watch(treeType, () => {
   color: #11998e;
 }
 
-/* Status Message */
 .status-message {
   margin-top: 16px;
   padding: 12px;
@@ -1249,7 +1312,6 @@ watch(treeType, () => {
   color: #004085;
 }
 
-/* Visualization Card */
 .visualization-card {
   background: white;
   border-radius: 24px;
@@ -1277,13 +1339,15 @@ watch(treeType, () => {
   font-weight: 500;
 }
 
-/* Tree Container */
 .tree-container {
   background: #f8f9fa;
   border-radius: 16px;
   padding: 20px;
   min-height: 500px;
   overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .tree-svg {
@@ -1292,7 +1356,22 @@ watch(treeType, () => {
   background: #f8f9fa;
 }
 
-/* Nodes */
+.empty-tree {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.empty-tree span {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-tree p {
+  color: #999;
+  font-size: 0.9rem;
+}
+
 .nodes-group circle {
   transition: all 0.3s ease;
   cursor: pointer;
@@ -1303,18 +1382,17 @@ watch(treeType, () => {
   filter: brightness(1.1);
 }
 
-.node-highlighted circle {
+.node-highlighted {
   fill: #f59e0b !important;
   stroke: #fff;
   stroke-width: 3;
   filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
 }
 
-.node-root circle {
+.node-root {
   fill: #ef4444 !important;
 }
 
-/* Traversals Panel */
 .traversals-panel {
   display: flex;
   gap: 16px;
@@ -1334,7 +1412,7 @@ watch(treeType, () => {
 
 .traversal-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .traversal-card.active {
@@ -1354,7 +1432,6 @@ watch(treeType, () => {
   word-break: break-word;
 }
 
-/* Legend */
 .legend {
   display: flex;
   justify-content: center;
@@ -1389,33 +1466,6 @@ watch(treeType, () => {
   background: #f59e0b;
 }
 
-/* Validation Panel */
-.validation-panel {
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.85rem;
-}
-
-.validation-panel.valid {
-  background: #d4edda;
-  color: #155724;
-}
-
-.validation-panel.invalid {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.validation-icon {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-/* Help Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1457,7 +1507,7 @@ watch(treeType, () => {
 }
 
 .close-modal {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
   font-size: 1.5rem;
@@ -1472,7 +1522,7 @@ watch(treeType, () => {
 }
 
 .close-modal:hover {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
   transform: rotate(90deg);
 }
 
@@ -1501,10 +1551,13 @@ watch(treeType, () => {
   line-height: 1.5;
 }
 
-/* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -1529,16 +1582,13 @@ watch(treeType, () => {
   }
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
   }
-  
   .config-card {
     position: static;
   }
-  
   .hero-section {
     flex-direction: column;
     text-align: center;
@@ -1549,31 +1599,27 @@ watch(treeType, () => {
   .tree-page {
     padding: 16px;
   }
-  
   .hero-section {
     padding: 24px;
   }
-  
   .hero-content h1 {
     font-size: 1.5rem;
   }
-  
   .traversals-panel {
     flex-direction: column;
   }
-  
-  .mode-selector, .tree-type-buttons, .action-buttons, .import-export-buttons {
+  .mode-selector,
+  .tree-type-buttons,
+  .action-buttons,
+  .import-export-buttons {
     flex-direction: column;
   }
-  
   .tree-container {
     min-height: 400px;
   }
-  
   .node-label {
     font-size: 10px;
   }
-  
   .nodes-group circle {
     r: 20;
   }

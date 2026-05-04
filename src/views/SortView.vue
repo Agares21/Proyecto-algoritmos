@@ -49,48 +49,66 @@
           </div>
 
           <div class="algorithm-selector">
-            <button 
-              @click="selectedAlgorithm = 'bubble'" 
-              class="algo-btn" 
-              :class="{ active: selectedAlgorithm === 'bubble' }">
+            <button
+              @click="selectedAlgorithm = 'bubble'"
+              class="algo-btn"
+              :class="{ active: selectedAlgorithm === 'bubble' }"
+            >
               Bubble Sort
             </button>
-            <button 
-              @click="selectedAlgorithm = 'quick'" 
-              class="algo-btn" 
-              :class="{ active: selectedAlgorithm === 'quick' }">
+            <button
+              @click="selectedAlgorithm = 'quick'"
+              class="algo-btn"
+              :class="{ active: selectedAlgorithm === 'quick' }"
+            >
               Quick Sort
             </button>
-            <button 
-              @click="selectedAlgorithm = 'merge'" 
-              class="algo-btn" 
-              :class="{ active: selectedAlgorithm === 'merge' }">
+            <button
+              @click="selectedAlgorithm = 'merge'"
+              class="algo-btn"
+              :class="{ active: selectedAlgorithm === 'merge' }"
+            >
               Merge Sort
             </button>
           </div>
 
           <div class="speed-control">
             <label>Velocidad de visualización</label>
-            <input type="range" v-model="speed" min="1" max="100" class="speed-slider">
+            <input
+              type="range"
+              v-model="speed"
+              min="1"
+              max="100"
+              class="speed-slider"
+            />
             <span class="speed-value">{{ speed }}%</span>
           </div>
 
           <div class="action-buttons">
-            <button @click="generateRandomArray" class="btn-outline">🎲 Aleatorio</button>
-            <button @click="generateSortedArray" class="btn-outline">✓ Ordenado</button>
-            <button @click="generateReversedArray" class="btn-outline">↺ Inverso</button>
-            <button @click="generatePartialArray" class="btn-outline">⚠ Parcial</button>
+            <button @click="generateRandomArray" class="btn-outline">
+              🎲 Aleatorio
+            </button>
+            <button @click="generateSortedArray" class="btn-outline">
+              ✓ Ordenado
+            </button>
+            <button @click="generateReversedArray" class="btn-outline">
+              ↺ Inverso
+            </button>
+            <button @click="generatePartialArray" class="btn-outline">
+              ⚠ Parcial
+            </button>
           </div>
 
           <!-- Sección de Importar/Exportar -->
           <div class="import-export-section">
             <div class="file-name-input">
               <label>Nombre del archivo</label>
-              <input 
-                type="text" 
-                v-model="fileName" 
+              <input
+                type="text"
+                v-model="fileName"
                 class="file-name-field"
-                placeholder="mi_arreglo">
+                placeholder="mi_arreglo"
+              />
             </div>
             <div class="import-export-buttons">
               <button @click="exportData" class="btn-export">
@@ -98,35 +116,34 @@
               </button>
               <label class="btn-import">
                 📥 Importar
-                <input 
-                  type="file" 
-                  accept=".json" 
-                  @change="importData" 
-                  style="display: none">
+                <input
+                  type="file"
+                  accept=".json"
+                  @change="importData"
+                  style="display: none"
+                />
               </label>
             </div>
           </div>
 
           <!-- Botones de acción principales -->
           <div class="main-action-buttons">
-            <button @click="startSorting" class="btn-execute" :disabled="isSorting">
+            <button
+              @click="startSorting"
+              class="btn-execute"
+              :disabled="isSorting"
+            >
               <span class="execute-icon">▶</span>
-              {{ isSorting ? 'Ordenando...' : 'Iniciar Ordenamiento' }}
+              {{ isSorting ? "Ordenando..." : "Iniciar Ordenamiento" }}
             </button>
 
-            <button @click="clearAll" class="btn-clear">
-              🗑️ Limpiar Todo
-            </button>
+            <button @click="clearAll" class="btn-clear">🗑️ Limpiar Todo</button>
 
-            <button @click="resetArray" class="btn-reset">
-              ⟳ Reiniciar
-            </button>
+            <button @click="resetArray" class="btn-reset">⟳ Reiniciar</button>
           </div>
 
           <!-- Botón de ayuda -->
-          <button @click="showHelpModal = true" class="btn-help">
-            Ayuda
-          </button>
+          <button @click="showHelpModal = true" class="btn-help">Ayuda</button>
         </div>
 
         <div class="stats-display">
@@ -153,26 +170,31 @@
       <div class="visualization-card">
         <div class="visualization-header">
           <h3>Visualización del Arreglo</h3>
-          <span class="array-hint">{{ array.length }} elementos | Rango: {{ lowerLimit }} - {{ upperLimit }}</span>
+          <span class="array-hint"
+            >{{ array.length }} elementos | Rango: {{ lowerLimit }} -
+            {{ upperLimit }}</span
+          >
         </div>
-        
+
         <div class="squares-container">
-          <div 
-            v-for="(value, index) in array" 
+          <div
+            v-for="(value, index) in array"
             :key="index"
             class="array-square-wrapper"
-            :class="{ 
-              'comparing': comparingIndices.includes(index),
-              'swapping': swappingIndices.includes(index),
-              'sorted': sortedIndices.includes(index)
-            }">
-            <div 
+            :class="{
+              comparing: comparingIndices.includes(index),
+              swapping: swappingIndices.includes(index),
+              sorted: sortedIndices.includes(index),
+            }"
+          >
+            <div
               class="array-square"
               :style="{
                 width: getSquareSize(value) + 'px',
                 height: getSquareSize(value) + 'px',
-                backgroundColor: getBarColor(index)
-              }">
+                backgroundColor: getBarColor(index),
+              }"
+            >
               <span class="square-value">{{ value }}</span>
             </div>
             <div class="square-index">{{ index }}</div>
@@ -202,17 +224,27 @@
 
     <!-- Modal de ayuda -->
     <Teleport to="body">
-      <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
+      <div
+        v-if="showHelpModal"
+        class="modal-overlay"
+        @click.self="showHelpModal = false"
+      >
         <div class="help-modal">
           <div class="modal-header">
             <h2>Guía de Algoritmos de Ordenamiento</h2>
-            <button class="close-modal" @click="showHelpModal = false">✕</button>
+            <button class="close-modal" @click="showHelpModal = false">
+              ✕
+            </button>
           </div>
           <div class="modal-body">
             <div class="help-content-detailed">
               <div class="help-section">
                 <h3>¿Qué son los algoritmos de ordenamiento?</h3>
-                <p>Los algoritmos de ordenamiento son métodos para reorganizar los elementos de una lista o arreglo en un orden específico (generalmente ascendente o descendente).</p>
+                <p>
+                  Los algoritmos de ordenamiento son métodos para reorganizar
+                  los elementos de una lista o arreglo en un orden específico
+                  (generalmente ascendente o descendente).
+                </p>
               </div>
 
               <div class="help-section">
@@ -221,19 +253,23 @@
                   <div class="step-detail">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                      <strong>Bubble Sort:</strong> Compara elementos adyacentes y los intercambia si están en el orden incorrecto. Complejidad: O(n²).
+                      <strong>Bubble Sort:</strong> Compara elementos adyacentes
+                      y los intercambia si están en el orden incorrecto.
+                      Complejidad: O(n²).
                     </div>
                   </div>
                   <div class="step-detail">
                     <div class="step-num">2</div>
                     <div class="step-text">
-                      <strong>Quick Sort:</strong> Divide y vencerás usando un pivote. Complejidad: O(n log n) promedio.
+                      <strong>Quick Sort:</strong> Divide y vencerás usando un
+                      pivote. Complejidad: O(n log n) promedio.
                     </div>
                   </div>
                   <div class="step-detail">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                      <strong>Merge Sort:</strong> Divide el arreglo en mitades y las mezcla ordenadamente. Complejidad: O(n log n).
+                      <strong>Merge Sort:</strong> Divide el arreglo en mitades
+                      y las mezcla ordenadamente. Complejidad: O(n log n).
                     </div>
                   </div>
                 </div>
@@ -242,36 +278,70 @@
               <div class="help-section">
                 <h3>Importar/Exportar:</h3>
                 <ul>
-                  <li><strong>Exportar:</strong> Guarda el arreglo actual en un archivo JSON</li>
-                  <li><strong>Importar:</strong> Carga un arreglo desde un archivo JSON</li>
-                  <li><strong>Nombre del archivo:</strong> Personaliza el nombre del archivo al exportar</li>
+                  <li>
+                    <strong>Exportar:</strong> Guarda el arreglo actual en un
+                    archivo JSON
+                  </li>
+                  <li>
+                    <strong>Importar:</strong> Carga un arreglo desde un archivo
+                    JSON
+                  </li>
+                  <li>
+                    <strong>Nombre del archivo:</strong> Personaliza el nombre
+                    del archivo al exportar
+                  </li>
                 </ul>
               </div>
 
               <div class="help-section">
                 <h3>Botones de control:</h3>
                 <ul>
-                  <li><strong>Limpiar Todo:</strong> Elimina todos los elementos del arreglo</li>
-                  <li><strong>Reiniciar:</strong> Genera un nuevo arreglo aleatorio</li>
-                  <li><strong>Iniciar Ordenamiento:</strong> Ejecuta el algoritmo seleccionado</li>
+                  <li>
+                    <strong>Limpiar Todo:</strong> Elimina todos los elementos
+                    del arreglo
+                  </li>
+                  <li>
+                    <strong>Reiniciar:</strong> Genera un nuevo arreglo
+                    aleatorio
+                  </li>
+                  <li>
+                    <strong>Iniciar Ordenamiento:</strong> Ejecuta el algoritmo
+                    seleccionado
+                  </li>
                 </ul>
               </div>
 
               <div class="help-section">
                 <h3>Visualización:</h3>
                 <ul>
-                  <li>El <strong>tamaño del cuadrado</strong> es proporcional al valor numérico</li>
+                  <li>
+                    El <strong>tamaño del cuadrado</strong> es proporcional al
+                    valor numérico
+                  </li>
                   <li>Los números se muestran dentro de cada cuadrado</li>
                   <li>El índice se muestra debajo de cada cuadrado</li>
-                  <li><span style="color: #f59e0b;">Amarillo:</span> Elementos siendo comparados</li>
-                  <li><span style="color: #ef4444;">Rojo:</span> Elementos siendo intercambiados</li>
-                  <li><span style="color: #10b981;">Verde:</span> Elementos ya ordenados</li>
-                  <li><span style="color: #3b82f6;">Azul:</span> Elementos pendientes</li>
+                  <li>
+                    <span style="color: #f59e0b">Amarillo:</span> Elementos
+                    siendo comparados
+                  </li>
+                  <li>
+                    <span style="color: #ef4444">Rojo:</span> Elementos siendo
+                    intercambiados
+                  </li>
+                  <li>
+                    <span style="color: #10b981">Verde:</span> Elementos ya
+                    ordenados
+                  </li>
+                  <li>
+                    <span style="color: #3b82f6">Azul:</span> Elementos
+                    pendientes
+                  </li>
                 </ul>
               </div>
 
               <div class="help-note-box">
-                <strong>Nota:</strong> Los cuadrados más pequeños representan números menores, los más grandes representan números mayores.
+                <strong>Nota:</strong> Los cuadrados más pequeños representan
+                números menores, los más grandes representan números mayores.
               </div>
             </div>
           </div>
@@ -282,18 +352,18 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 // Estado
 const arraySize = ref(15);
 const lowerLimit = ref(10);
 const upperLimit = ref(100);
-const selectedAlgorithm = ref('bubble');
+const selectedAlgorithm = ref("bubble");
 const speed = ref(50);
 const isSorting = ref(false);
 const showHelpModal = ref(false);
-const statusMessage = ref('');
-const statusTone = ref('');
+const statusMessage = ref("");
+const statusTone = ref("");
 const array = ref([]);
 const comparisons = ref(0);
 const swaps = ref(0);
@@ -301,7 +371,7 @@ const executionTime = ref(0);
 const comparingIndices = ref([]);
 const swappingIndices = ref([]);
 const sortedIndices = ref([]);
-const fileName = ref('arreglo_ordenamiento');
+const fileName = ref("arreglo_ordenamiento");
 
 // Métodos
 const getSquareSize = (value) => {
@@ -314,27 +384,27 @@ const getSquareSize = (value) => {
 
 const getAlgorithmName = () => {
   const names = {
-    bubble: 'Bubble Sort',
-    quick: 'Quick Sort',
-    merge: 'Merge Sort'
+    bubble: "Bubble Sort",
+    quick: "Quick Sort",
+    merge: "Merge Sort",
   };
   return names[selectedAlgorithm.value];
 };
 
 const getAlgorithmClass = () => {
   const classes = {
-    bubble: 'badge-bubble',
-    quick: 'badge-quick',
-    merge: 'badge-merge'
+    bubble: "badge-bubble",
+    quick: "badge-quick",
+    merge: "badge-merge",
   };
   return classes[selectedAlgorithm.value];
 };
 
 const getBarColor = (index) => {
-  if (comparingIndices.value.includes(index)) return '#f59e0b';
-  if (swappingIndices.value.includes(index)) return '#ef4444';
-  if (sortedIndices.value.includes(index)) return '#10b981';
-  return '#3b82f6';
+  if (comparingIndices.value.includes(index)) return "#f59e0b";
+  if (swappingIndices.value.includes(index)) return "#ef4444";
+  if (sortedIndices.value.includes(index)) return "#10b981";
+  return "#3b82f6";
 };
 
 // Limpiar todo el arreglo
@@ -347,20 +417,25 @@ const clearAll = () => {
   comparisons.value = 0;
   swaps.value = 0;
   executionTime.value = 0;
-  statusMessage.value = 'Arreglo limpiado completamente';
-  statusTone.value = 'neutral';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusMessage.value = "Arreglo limpiado completamente";
+  statusTone.value = "neutral";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 // Exportar datos
 const exportData = () => {
   if (array.value.length === 0) {
-    statusMessage.value = 'No hay datos para exportar. Genere o importe un arreglo primero.';
-    statusTone.value = 'error';
-    setTimeout(() => { statusMessage.value = ''; }, 2000);
+    statusMessage.value =
+      "No hay datos para exportar. Genere o importe un arreglo primero.";
+    statusTone.value = "error";
+    setTimeout(() => {
+      statusMessage.value = "";
+    }, 2000);
     return;
   }
-  
+
   const exportObject = {
     metadata: {
       name: fileName.value,
@@ -368,7 +443,7 @@ const exportData = () => {
       size: array.value.length,
       lowerLimit: lowerLimit.value,
       upperLimit: upperLimit.value,
-      algorithm: selectedAlgorithm.value
+      algorithm: selectedAlgorithm.value,
     },
     data: array.value,
     config: {
@@ -376,84 +451,97 @@ const exportData = () => {
       lowerLimit: lowerLimit.value,
       upperLimit: upperLimit.value,
       algorithm: selectedAlgorithm.value,
-      speed: speed.value
-    }
+      speed: speed.value,
+    },
   };
-  
+
   const jsonString = JSON.stringify(exportObject, null, 2);
-  const blob = new Blob([jsonString], { type: 'application/json' });
+  const blob = new Blob([jsonString], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = `${fileName.value || 'arreglo'}.json`;
+  link.download = `${fileName.value || "arreglo"}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-  
-  statusMessage.value = 'Arreglo exportado exitosamente';
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+
+  statusMessage.value = "Arreglo exportado exitosamente";
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 // Importar datos
 const importData = (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const importedData = JSON.parse(e.target.result);
-      
+
       if (importedData.data && Array.isArray(importedData.data)) {
         array.value = importedData.data;
         arraySize.value = array.value.length;
-        
+
         if (importedData.config) {
-          if (importedData.config.lowerLimit) lowerLimit.value = importedData.config.lowerLimit;
-          if (importedData.config.upperLimit) upperLimit.value = importedData.config.upperLimit;
-          if (importedData.config.algorithm) selectedAlgorithm.value = importedData.config.algorithm;
-          if (importedData.config.speed) speed.value = importedData.config.speed;
+          if (importedData.config.lowerLimit)
+            lowerLimit.value = importedData.config.lowerLimit;
+          if (importedData.config.upperLimit)
+            upperLimit.value = importedData.config.upperLimit;
+          if (importedData.config.algorithm)
+            selectedAlgorithm.value = importedData.config.algorithm;
+          if (importedData.config.speed)
+            speed.value = importedData.config.speed;
         } else if (importedData.metadata) {
-          if (importedData.metadata.lowerLimit) lowerLimit.value = importedData.metadata.lowerLimit;
-          if (importedData.metadata.upperLimit) upperLimit.value = importedData.metadata.upperLimit;
-          if (importedData.metadata.name) fileName.value = importedData.metadata.name;
+          if (importedData.metadata.lowerLimit)
+            lowerLimit.value = importedData.metadata.lowerLimit;
+          if (importedData.metadata.upperLimit)
+            upperLimit.value = importedData.metadata.upperLimit;
+          if (importedData.metadata.name)
+            fileName.value = importedData.metadata.name;
         }
-        
+
         const minValue = Math.min(...array.value);
         const maxValue = Math.max(...array.value);
         if (minValue < lowerLimit.value) lowerLimit.value = minValue - 5;
         if (maxValue > upperLimit.value) upperLimit.value = maxValue + 5;
-        
+
         sortedIndices.value = [];
         comparingIndices.value = [];
         swappingIndices.value = [];
         comparisons.value = 0;
         swaps.value = 0;
         executionTime.value = 0;
-        
+
         statusMessage.value = `Arreglo importado: ${array.value.length} elementos`;
-        statusTone.value = 'success';
+        statusTone.value = "success";
       } else {
-        throw new Error('Formato de archivo inválido');
+        throw new Error("Formato de archivo inválido");
       }
     } catch (error) {
-      statusMessage.value = 'Error al importar: Archivo inválido';
-      statusTone.value = 'error';
+      statusMessage.value = "Error al importar: Archivo inválido";
+      statusTone.value = "error";
     }
-    setTimeout(() => { statusMessage.value = ''; }, 2000);
+    setTimeout(() => {
+      statusMessage.value = "";
+    }, 2000);
   };
-  
+
   reader.readAsText(file);
-  event.target.value = '';
+  event.target.value = "";
 };
 
 // Generadores de arreglos
 const generateRandomArray = () => {
   const newArray = [];
   for (let i = 0; i < arraySize.value; i++) {
-    const value = Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) + lowerLimit.value;
+    const value =
+      Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) +
+      lowerLimit.value;
     newArray.push(value);
   }
   array.value = newArray;
@@ -464,8 +552,10 @@ const generateRandomArray = () => {
   swaps.value = 0;
   executionTime.value = 0;
   statusMessage.value = `Arreglo aleatorio generado (rango: ${lowerLimit.value}-${upperLimit.value})`;
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 const generateSortedArray = () => {
@@ -481,9 +571,11 @@ const generateSortedArray = () => {
   comparisons.value = 0;
   swaps.value = 0;
   executionTime.value = 0;
-  statusMessage.value = 'Arreglo ordenado generado';
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusMessage.value = "Arreglo ordenado generado";
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 const generateReversedArray = () => {
@@ -499,9 +591,11 @@ const generateReversedArray = () => {
   comparisons.value = 0;
   swaps.value = 0;
   executionTime.value = 0;
-  statusMessage.value = 'Arreglo inverso generado';
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusMessage.value = "Arreglo inverso generado";
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 const generatePartialArray = () => {
@@ -511,7 +605,10 @@ const generatePartialArray = () => {
     if (i < arraySize.value / 2) {
       newArray.push(Math.round(lowerLimit.value + i * step));
     } else {
-      newArray.push(Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) + lowerLimit.value);
+      newArray.push(
+        Math.floor(Math.random() * (upperLimit.value - lowerLimit.value + 1)) +
+          lowerLimit.value,
+      );
     }
   }
   array.value = newArray;
@@ -521,9 +618,11 @@ const generatePartialArray = () => {
   comparisons.value = 0;
   swaps.value = 0;
   executionTime.value = 0;
-  statusMessage.value = 'Arreglo parcialmente ordenado generado';
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+  statusMessage.value = "Arreglo parcialmente ordenado generado";
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 };
 
 const resetArray = () => {
@@ -573,7 +672,7 @@ const decrementUpperLimit = () => {
 };
 
 const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 const delay = () => {
@@ -587,26 +686,26 @@ async function bubbleSort() {
   comparisons.value = 0;
   swaps.value = 0;
   sortedIndices.value = [];
-  
+
   for (let i = 0; i < n - 1; i++) {
     for (let j = 0; j < n - i - 1; j++) {
       comparingIndices.value = [j, j + 1];
       await delay();
-      
+
       comparisons.value++;
-      
+
       if (arr[j] > arr[j + 1]) {
         swappingIndices.value = [j, j + 1];
         await delay();
-        
+
         [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
         swaps.value++;
         array.value = [...arr];
-        
+
         swappingIndices.value = [];
         await delay();
       }
-      
+
       comparingIndices.value = [];
     }
     sortedIndices.value.push(n - i - 1);
@@ -627,27 +726,27 @@ async function quickSort(arr, low, high) {
 async function partition(arr, low, high) {
   const pivot = arr[high];
   let i = low - 1;
-  
+
   for (let j = low; j < high; j++) {
     comparingIndices.value = [j, high];
     await delay();
     comparisons.value++;
-    
+
     if (arr[j] < pivot) {
       i++;
       swappingIndices.value = [i, j];
       await delay();
-      
+
       [arr[i], arr[j]] = [arr[j], arr[i]];
       swaps.value++;
       array.value = [...arr];
-      
+
       swappingIndices.value = [];
       await delay();
     }
     comparingIndices.value = [];
   }
-  
+
   swappingIndices.value = [i + 1, high];
   await delay();
   [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
@@ -655,7 +754,7 @@ async function partition(arr, low, high) {
   array.value = [...arr];
   swappingIndices.value = [];
   await delay();
-  
+
   return i + 1;
 }
 
@@ -685,13 +784,15 @@ async function mergeSort(arr, l, r) {
 async function merge(arr, l, m, r) {
   const left = arr.slice(l, m + 1);
   const right = arr.slice(m + 1, r + 1);
-  let i = 0, j = 0, k = l;
-  
+  let i = 0,
+    j = 0,
+    k = l;
+
   while (i < left.length && j < right.length) {
     comparingIndices.value = [l + i, m + 1 + j];
     await delay();
     comparisons.value++;
-    
+
     if (left[i] <= right[j]) {
       arr[k] = left[i];
       i++;
@@ -705,7 +806,7 @@ async function merge(arr, l, m, r) {
     await delay();
     k++;
   }
-  
+
   while (i < left.length) {
     arr[k] = left[i];
     array.value = [...arr];
@@ -713,7 +814,7 @@ async function merge(arr, l, m, r) {
     i++;
     k++;
   }
-  
+
   while (j < right.length) {
     arr[k] = right[j];
     array.value = [...arr];
@@ -740,32 +841,37 @@ async function mergeSortWrapper() {
 async function startSorting() {
   if (isSorting.value) return;
   if (array.value.length === 0) {
-    statusMessage.value = 'No hay elementos para ordenar. Genere un arreglo primero.';
-    statusTone.value = 'error';
-    setTimeout(() => { statusMessage.value = ''; }, 2000);
+    statusMessage.value =
+      "No hay elementos para ordenar. Genere un arreglo primero.";
+    statusTone.value = "error";
+    setTimeout(() => {
+      statusMessage.value = "";
+    }, 2000);
     return;
   }
-  
+
   isSorting.value = true;
   sortedIndices.value = [];
   const startTime = performance.now();
-  
-  if (selectedAlgorithm.value === 'bubble') {
+
+  if (selectedAlgorithm.value === "bubble") {
     await bubbleSort();
-  } else if (selectedAlgorithm.value === 'quick') {
+  } else if (selectedAlgorithm.value === "quick") {
     await quickSortWrapper();
-  } else if (selectedAlgorithm.value === 'merge') {
+  } else if (selectedAlgorithm.value === "merge") {
     await mergeSortWrapper();
   }
-  
+
   const endTime = performance.now();
   executionTime.value = Math.round(endTime - startTime);
-  
+
   isSorting.value = false;
-  
-  statusMessage.value = 'Ordenamiento completado';
-  statusTone.value = 'success';
-  setTimeout(() => { statusMessage.value = ''; }, 2000);
+
+  statusMessage.value = "Ordenamiento completado";
+  statusTone.value = "success";
+  setTimeout(() => {
+    statusMessage.value = "";
+  }, 2000);
 }
 
 // Inicializar
@@ -810,7 +916,7 @@ watch([arraySize, lowerLimit, upperLimit], () => {
 .file-name-field:focus {
   outline: none;
   border-color: #2a5298;
-  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+  box-shadow: 0 0 0 3px rgba(48, 180, 198, 0.1);
 }
 
 .import-export-buttons {
@@ -818,7 +924,8 @@ watch([arraySize, lowerLimit, upperLimit], () => {
   gap: 12px;
 }
 
-.btn-export, .btn-import {
+.btn-export,
+.btn-import {
   flex: 1;
   padding: 10px;
   border: none;
@@ -982,7 +1089,7 @@ watch([arraySize, lowerLimit, upperLimit], () => {
 .hero-content h1 {
   font-size: 2rem;
   margin: 0 0 8px 0;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  background: linear-gradient(135deg, #1e3c72, #2a8f98);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1051,7 +1158,8 @@ watch([arraySize, lowerLimit, upperLimit], () => {
   width: 100%;
 }
 
-.dimension-item label, .range-item label {
+.dimension-item label,
+.range-item label {
   display: block;
   font-size: 0.85rem;
   color: #666;
@@ -1312,14 +1420,26 @@ watch([arraySize, lowerLimit, upperLimit], () => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 .legend {
@@ -1507,8 +1627,12 @@ watch([arraySize, lowerLimit, upperLimit], () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalSlideIn {
@@ -1537,16 +1661,16 @@ watch([arraySize, lowerLimit, upperLimit], () => {
   .main-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .config-card {
     position: static;
   }
-  
+
   .hero-section {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .range-group {
     grid-template-columns: 1fr;
   }
@@ -1556,23 +1680,23 @@ watch([arraySize, lowerLimit, upperLimit], () => {
   .sort-page {
     padding: 16px;
   }
-  
+
   .hero-section {
     padding: 24px;
   }
-  
+
   .hero-content h1 {
     font-size: 1.5rem;
   }
-  
+
   .squares-container {
     min-height: 300px;
   }
-  
+
   .square-value {
     font-size: 10px;
   }
-  
+
   .square-index {
     font-size: 10px;
   }
