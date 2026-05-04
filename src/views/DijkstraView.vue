@@ -52,6 +52,33 @@
             </div>
           </div>
 
+          <!-- Sección de Importar/Exportar (NUEVA UBICACIÓN) -->
+          <div class="import-export-section">
+            <div class="file-name-input">
+              <label>Nombre del archivo</label>
+              <input
+                type="text"
+                v-model="exportFileName"
+                class="file-name-field"
+                placeholder="mi_grafo_dijkstra"
+              />
+            </div>
+            <div class="import-export-buttons">
+              <button @click="exportData" class="btn-export">
+                📤 Exportar
+              </button>
+              <label class="btn-import">
+                📥 Importar
+                <input
+                  type="file"
+                  accept=".json"
+                  @change="importData"
+                  style="display: none"
+                />
+              </label>
+            </div>
+          </div>
+
           <button
             @click="runDijkstra"
             class="btn-execute"
@@ -128,6 +155,33 @@
               <span class="distance-badge">{{ dist }}</span>
             </div>
           </div>
+
+          <!-- NUEVO: Pasos del algoritmo paso a paso -->
+          <div class="result-section-card" v-if="steps.length > 0">
+            <div class="section-header">
+              <div class="section-title">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <h4>📖 Pasos del Algoritmo</h4>
+              </div>
+              <button @click="toggleSteps" class="toggle-steps-btn">
+                {{ showSteps ? "Ocultar" : "Mostrar" }}
+              </button>
+            </div>
+
+            <div v-if="showSteps" class="steps-container">
+              <div v-for="(step, idx) in steps" :key="idx" class="step-item">
+                <div class="step-number">{{ idx + 1 }}</div>
+                <div class="step-content" v-html="step"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-else class="empty-state">
@@ -167,6 +221,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Input oculto para importar -->
+    <input
+      ref="importInputRef"
+      type="file"
+      accept=".json"
+      class="hidden-input"
+      @change="importData"
+    />
   </div>
 </template>
 
@@ -177,8 +240,12 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue";
 const sourceNode = ref(0);
 const isExecuting = ref(false);
 const showHelp = ref(false);
+const showSteps = ref(false);
 const message = ref("");
 const messageType = ref("");
+const exportFileName = ref("dijkstra");
+const importInputRef = ref(null);
+const steps = ref([]); // NUEVO: almacenar pasos del algoritmo
 
 // Datos del grafo
 const nodes = ref([]);
@@ -231,6 +298,71 @@ const selectSourceNode = (id) => {
   showMessage(`🎯 Origen cambiado a ${getNodeLabel(id)}`, "success");
 };
 
+const toggleSteps = () => {
+  showSteps.value = !showSteps.value;
+};
+
+// Exportar datos
+const exportData = () => {
+  if (nodes.value.length === 0) {
+    showMessage("No hay datos para exportar", "error");
+    return;
+  }
+
+  const payload = {
+    nodes: nodes.value,
+    edges: edges.value,
+    sourceNode: sourceNode.value,
+    exportDate: new Date().toISOString(),
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  const fileName = exportFileName.value.trim() || "dijkstra";
+  link.download = `${fileName}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  showMessage(`📁 Grafo exportado como ${fileName}.json`, "success");
+};
+
+const importData = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.nodes && data.edges) {
+        nodes.value = data.nodes;
+        edges.value = data.edges;
+        if (data.sourceNode !== undefined && data.sourceNode < nodes.value.length) {
+          sourceNode.value = data.sourceNode;
+        }
+        distances.value = [];
+        previous.value = [];
+        pathEdges.value = [];
+        steps.value = [];
+        nextTick(() => {
+          resizeCanvas();
+          drawGraph();
+        });
+        showMessage("✅ Grafo importado exitosamente", "success");
+      } else {
+        throw new Error("Formato inválido");
+      }
+    } catch (error) {
+      showMessage("❌ Error al importar archivo", "error");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+};
+
 // Generar grafo aleatorio
 const generateRandomGraph = () => {
   const n = Math.min(6, nodeLabels.length);
@@ -254,7 +386,6 @@ const generateRandomGraph = () => {
     });
   }
 
-  // Crear aristas
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
       if (Math.random() > 0.4) {
@@ -273,6 +404,7 @@ const generateRandomGraph = () => {
   distances.value = [];
   previous.value = [];
   pathEdges.value = [];
+  steps.value = [];
 
   nextTick(() => drawGraph());
   showMessage("✅ Grafo aleatorio generado", "success");
@@ -332,6 +464,7 @@ const loadExample = () => {
   distances.value = [];
   previous.value = [];
   pathEdges.value = [];
+  steps.value = [];
 
   nextTick(() => drawGraph());
   showMessage("✅ Ejemplo clásico cargado", "success");
@@ -344,6 +477,7 @@ const clearGraph = () => {
   distances.value = [];
   previous.value = [];
   pathEdges.value = [];
+  steps.value = [];
   if (canvasRef.value) {
     const ctx = canvasRef.value.getContext("2d");
     ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
@@ -351,7 +485,7 @@ const clearGraph = () => {
   showMessage("🔄 Grafo reiniciado", "neutral");
 };
 
-// Algoritmo de Dijkstra
+// Algoritmo de Dijkstra CON PASOS
 const runDijkstra = async () => {
   if (nodes.value.length === 0) {
     showMessage("❌ No hay nodos en el grafo", "error");
@@ -364,6 +498,8 @@ const runDijkstra = async () => {
   }
 
   isExecuting.value = true;
+  const stepList = [];
+  
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   const n = nodes.value.length;
@@ -371,7 +507,6 @@ const runDijkstra = async () => {
   const prev = Array(n).fill(-1);
   const visited = Array(n).fill(false);
 
-  // Crear mapa de aristas
   const edgesMap = new Map();
   edges.value.forEach((edge) => {
     edgesMap.set(`${edge.from}-${edge.to}`, edge.weight);
@@ -379,6 +514,8 @@ const runDijkstra = async () => {
   });
 
   dist[sourceNode.value] = 0;
+  stepList.push(`🎯 <strong>INICIO:</strong> Distancia a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
+  steps.value = [...stepList];
 
   for (let count = 0; count < n; count++) {
     let minDist = Infinity;
@@ -393,25 +530,39 @@ const runDijkstra = async () => {
 
     if (u === -1) break;
     visited[u] = true;
+    
+    if (u !== sourceNode.value) {
+      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Seleccionamos <strong>${getNodeLabel(u)}</strong> (distancia = ${dist[u]})`);
+    } else {
+      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Comenzamos desde el origen <strong>${getNodeLabel(u)}</strong>`);
+    }
 
+    let updatedCount = 0;
     for (let v = 0; v < n; v++) {
       const weight = edgesMap.get(`${u}-${v}`);
       if (weight && !visited[v]) {
         const newDist = dist[u] + weight;
         if (newDist < dist[v]) {
+          const oldStr = dist[v] === Infinity ? "∞" : dist[v];
           dist[v] = newDist;
           prev[v] = u;
+          stepList.push(`  ↳ <strong>Actualizando ${getNodeLabel(v)}:</strong> ${oldStr} → ${newDist} (vía ${getNodeLabel(u)})`);
+          updatedCount++;
         }
       }
+    }
+    
+    if (updatedCount === 0 && u !== sourceNode.value) {
+      stepList.push(`  ℹ️ No se actualizaron distancias desde ${getNodeLabel(u)}`);
     }
 
     distances.value = [...dist];
     previous.value = [...prev];
+    steps.value = [...stepList];
     drawGraph(true);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
-  // Reconstruir aristas del camino
   const newPathEdges = [];
   for (let i = 0; i < n; i++) {
     if (i !== sourceNode.value && prev[i] !== -1) {
@@ -429,13 +580,13 @@ const runDijkstra = async () => {
   }
 
   pathEdges.value = newPathEdges;
-  drawGraph(true);
-
+  
   const reached = dist.filter((d) => d !== Infinity && d !== 0).length;
-  showMessage(
-    `✅ Dijkstra completado. ${reached} nodos alcanzables`,
-    "success",
-  );
+  stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
+  steps.value = [...stepList];
+  
+  drawGraph(true);
+  showMessage(`✅ Dijkstra completado. ${reached} nodos alcanzables`, "success");
   isExecuting.value = false;
 };
 
@@ -451,7 +602,6 @@ const drawGraph = (highlight = false) => {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Fondo con grid
   ctx.strokeStyle = "#e2e8f0";
   ctx.lineWidth = 0.5;
   for (let x = 0; x < canvas.width; x += 30) {
@@ -467,7 +617,6 @@ const drawGraph = (highlight = false) => {
     ctx.stroke();
   }
 
-  // Dibujar aristas
   edges.value.forEach((edge) => {
     const fromNode = nodes.value.find((n) => n.id === edge.from);
     const toNode = nodes.value.find((n) => n.id === edge.to);
@@ -486,7 +635,6 @@ const drawGraph = (highlight = false) => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Peso
     const midX = (fromNode.x + toNode.x) / 2;
     const midY = (fromNode.y + toNode.y) / 2;
     ctx.fillStyle = "white";
@@ -496,7 +644,6 @@ const drawGraph = (highlight = false) => {
     ctx.fillText(edge.weight, midX, midY + 4);
   });
 
-  // Dibujar nodos
   nodes.value.forEach((node) => {
     ctx.beginPath();
     ctx.arc(node.x, node.y, 26, 0, 2 * Math.PI);
@@ -567,7 +714,6 @@ const handleMouseUp = () => {
 const handleDoubleClick = (e) => {
   const pos = getMousePos(e);
 
-  // Buscar arista para editar
   for (const edge of edges.value) {
     const fromNode = nodes.value.find((n) => n.id === edge.from);
     const toNode = nodes.value.find((n) => n.id === edge.to);
@@ -767,9 +913,85 @@ onUnmounted(() => {
   color: white;
 }
 
+/* Estilos para importar/exportar */
+.import-export-section {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.file-name-input {
+  margin-bottom: 10px;
+}
+
+.file-name-input label {
+  display: block;
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.file-name-field {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.file-name-field:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.import-export-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-export,
+.btn-import {
+  flex: 1;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.btn-export {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-import {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+}
+
+.btn-import:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  cursor: pointer;
+}
+
+.hidden-input {
+  display: none;
+}
+
 .btn-execute {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
@@ -791,7 +1013,7 @@ onUnmounted(() => {
 
 .btn-help {
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   background: #f8f9fa;
   border: 1px solid #ddd;
   border-radius: 12px;
@@ -805,7 +1027,7 @@ onUnmounted(() => {
   padding: 8px;
   border-radius: 8px;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .status-message.success {
@@ -938,6 +1160,88 @@ onUnmounted(() => {
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: bold;
+}
+
+/* Estilos para la sección de pasos */
+.result-section-card {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 16px;
+  border: 1px solid #e0e0e0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title svg {
+  color: #667eea;
+}
+
+.section-title h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.toggle-steps-btn {
+  padding: 3px 10px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.toggle-steps-btn:hover {
+  background: #cbd5e1;
+}
+
+.steps-container {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.step-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.step-number {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  font-size: 0.7rem;
+  color: #555;
+  line-height: 1.4;
 }
 
 .empty-state {
