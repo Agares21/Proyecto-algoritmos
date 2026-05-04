@@ -5,11 +5,13 @@
       <div class="hero-content">
         <h1>Algoritmo de Kruskal</h1>
         <p>
-          Árbol de Expansión Mínima (MST) - Encuentra la conexión más económica
-          entre todos los nodos
+          Árbol de {{ optimizationType === 'min' ? 'Mínima' : 'Máxima' }} Expansión - Encuentra la conexión más 
+          {{ optimizationType === 'min' ? 'económica' : 'beneficiosa' }} entre todos los nodos
         </p>
       </div>
-      <div class="algorithm-badge">🌳 Árbol de Expansión Mínima</div>
+      <div class="algorithm-badge" :class="optimizationType === 'min' ? 'badge-min' : 'badge-max'">
+        {{ optimizationType === 'min' ? '🌳 Árbol Mínimo' : '🌲 Árbol Máximo' }}
+      </div>
     </div>
 
     <div class="main-layout">
@@ -27,6 +29,21 @@
               <span class="num-value">{{ nodeCount }}</span>
               <button @click="incrementNodes" class="num-btn">+</button>
             </div>
+          </div>
+
+          <div class="optimization-toggle">
+            <button 
+              @click="optimizationType = 'min'" 
+              class="toggle-btn" 
+              :class="{ active: optimizationType === 'min' }">
+              📉 Minimizar
+            </button>
+            <button 
+              @click="optimizationType = 'max'" 
+              class="toggle-btn" 
+              :class="{ active: optimizationType === 'max' }">
+              📈 Maximizar
+            </button>
           </div>
 
           <div class="action-buttons">
@@ -60,6 +77,9 @@
             <div class="info-status">
               <strong>🔗 Aristas:</strong> {{ edgesList.length }}
             </div>
+            <div class="info-status">
+              <strong>🎯 Objetivo:</strong> {{ optimizationType === 'min' ? 'Minimizar peso total' : 'Maximizar peso total' }}
+            </div>
           </div>
 
           <button
@@ -68,7 +88,7 @@
             :disabled="isExecuting"
           >
             <span class="execute-icon">▶</span>
-            {{ isExecuting ? "Calculando..." : "Ejecutar Kruskal" }}
+            {{ isExecuting ? "Calculando..." : `Ejecutar Kruskal (${optimizationType === 'min' ? 'Mínimo' : 'Máximo'})` }}
           </button>
 
           <button @click="showHelpModal = true" class="btn-help">
@@ -81,7 +101,7 @@
         </p>
       </div>
 
-      <!-- Visualización del grafo - AHORA MÁS GRANDE -->
+      <!-- Visualización del grafo -->
       <div class="graph-card">
         <div class="graph-header">
           <h3>🌐 Visualización del Grafo</h3>
@@ -92,7 +112,7 @@
             </span>
             <span class="pill pill-edge-mst">
               <span class="pill-dot mst-dot"></span>
-              Aristas del MST
+              Aristas del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}
             </span>
             <span class="pill pill-edge-normal">
               <span class="pill-dot normal-dot"></span>
@@ -117,7 +137,7 @@
         <div class="legend">
           <div class="legend-item">
             <div class="legend-color mst-color"></div>
-            <span>🟢 Arista del MST</span>
+            <span>{{ optimizationType === 'min' ? '🟢 Arista del MST' : '🟠 Arista del Árbol Máximo' }}</span>
           </div>
           <div class="legend-item">
             <div class="legend-color normal-color"></div>
@@ -144,7 +164,7 @@
           <!-- Tarjeta de peso total -->
           <div class="result-section-card gradient-card">
             <div class="card-header">
-              <div class="card-icon blue-gradient">
+              <div class="card-icon" :class="optimizationType === 'min' ? 'blue-gradient' : 'orange-gradient'">
                 <svg viewBox="0 0 20 20" fill="currentColor">
                   <path
                     d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8-6a6 6 0 100 12 6 6 0 000-12z"
@@ -158,16 +178,16 @@
                 </svg>
               </div>
               <div>
-                <h4>Peso Total del MST</h4>
-                <p>Suma de todas las aristas seleccionadas</p>
+                <h4>Peso Total del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}</h4>
+                <p>{{ optimizationType === 'min' ? 'Suma de aristas seleccionadas (mínima posible)' : 'Suma de aristas seleccionadas (máxima posible)' }}</p>
               </div>
             </div>
-            <div class="total-value-card value-min">
+            <div class="total-value-card" :class="optimizationType === 'min' ? 'value-min' : 'value-max'">
               <span class="value-number">{{ totalWeight }}</span>
             </div>
           </div>
 
-          <!-- Lista de aristas del MST -->
+          <!-- Lista de aristas seleccionadas -->
           <div class="result-section-card">
             <div class="section-header">
               <div class="section-title">
@@ -178,20 +198,20 @@
                     clip-rule="evenodd"
                   />
                 </svg>
-                <h4>🌲 Árbol de Expansión Mínima</h4>
+                <h4>{{ optimizationType === 'min' ? '🌲 Árbol de Expansión Mínima' : '🌳 Árbol de Expansión Máxima' }}</h4>
               </div>
-              <span class="stat-badge">{{ mstEdges.length }} aristas</span>
+              <span class="stat-badge">{{ selectedEdges.length }} aristas</span>
             </div>
 
             <div class="edges-list">
-              <div v-for="(edge, idx) in mstEdges" :key="idx" class="edge-item">
+              <div v-for="(edge, idx) in selectedEdges" :key="idx" class="edge-item">
                 <span class="edge-nodes"
                   >{{ getNodeLabel(edge.from) }} →
                   {{ getNodeLabel(edge.to) }}</span
                 >
                 <span class="edge-weight">{{ edge.weight }}</span>
               </div>
-              <div v-if="mstEdges.length === 0" class="empty-state">
+              <div v-if="selectedEdges.length === 0" class="empty-state">
                 Ejecuta el algoritmo para ver el resultado
               </div>
             </div>
@@ -205,7 +225,7 @@
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                   <path
                     fill-rule="evenodd"
-                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
                     clip-rule="evenodd"
                   />
                 </svg>
@@ -244,8 +264,9 @@
               <div class="help-section">
                 <h3>🎯 ¿Qué es?</h3>
                 <p>
-                  Algoritmo greedy que encuentra el Árbol de Expansión Mínima
-                  (MST) de un grafo conexo ponderado.
+                  Algoritmo greedy que encuentra el Árbol de Expansión 
+                  <strong>{{ optimizationType === 'min' ? 'Mínima (MST)' : 'Máxima' }}</strong> 
+                  de un grafo conexo ponderado.
                 </p>
               </div>
               <div class="help-section">
@@ -254,7 +275,8 @@
                   <div class="step-detail">
                     <div class="step-num">1</div>
                     <div class="step-text">
-                      Ordenar aristas por peso de menor a mayor
+                      Ordenar aristas por peso de 
+                      <strong>{{ optimizationType === 'min' ? 'menor a mayor' : 'mayor a menor' }}</strong>
                     </div>
                   </div>
                   <div class="step-detail">
@@ -266,13 +288,14 @@
                   <div class="step-detail">
                     <div class="step-num">3</div>
                     <div class="step-text">
-                      Seleccionar arista con menor peso
+                      Seleccionar arista con peso más 
+                      <strong>{{ optimizationType === 'min' ? 'pequeño' : 'grande' }}</strong>
                     </div>
                   </div>
                   <div class="step-detail">
                     <div class="step-num">4</div>
                     <div class="step-text">
-                      Si no forma ciclo, agregar al MST
+                      Si no forma ciclo, agregar al árbol
                     </div>
                   </div>
                   <div class="step-detail">
@@ -282,8 +305,10 @@
                 </div>
               </div>
               <div class="help-note-box">
-                <strong>💡 Nota:</strong> El grafo debe ser conexo para
-                encontrar un árbol de expansión válido.
+                <strong>💡 Nota:</strong> 
+                {{ optimizationType === 'min' 
+                  ? 'El MST minimiza el peso total de las conexiones.' 
+                  : 'El árbol máximo maximiza el peso total de las conexiones (problema de red de máxima capacidad/beneficio).' }}
               </div>
             </div>
           </div>
@@ -306,6 +331,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 
 // Estado
 const nodeCount = ref(6);
+const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showHelpModal = ref(false);
 const showSteps = ref(false);
@@ -316,7 +342,7 @@ const exportFileName = ref("kruskal");
 // Datos del grafo
 const nodes = ref([]);
 const edgesList = ref([]);
-const mstEdges = ref([]);
+const selectedEdges = ref([]);
 const totalWeight = ref(0);
 const steps = ref([]);
 const selectedNode = ref(null);
@@ -367,7 +393,6 @@ const generateRandomGraph = () => {
     });
   }
 
-  // Crear aristas aleatorias (grafo conexo)
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
       if (Math.random() > 0.4) {
@@ -384,7 +409,7 @@ const generateRandomGraph = () => {
 
   nodes.value = newNodes;
   edgesList.value = newEdges;
-  mstEdges.value = [];
+  selectedEdges.value = [];
   totalWeight.value = 0;
   steps.value = [];
 
@@ -412,42 +437,12 @@ const loadExample = () => {
   const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
 
   nodes.value = [
-    {
-      id: 0,
-      label: "A",
-      x: centerX + radius * Math.sin(0),
-      y: centerY + radius * Math.cos(0),
-    },
-    {
-      id: 1,
-      label: "B",
-      x: centerX + radius * Math.sin((72 * Math.PI) / 180),
-      y: centerY + radius * Math.cos((72 * Math.PI) / 180),
-    },
-    {
-      id: 2,
-      label: "C",
-      x: centerX + radius * Math.sin((144 * Math.PI) / 180),
-      y: centerY + radius * Math.cos((144 * Math.PI) / 180),
-    },
-    {
-      id: 3,
-      label: "D",
-      x: centerX + radius * Math.sin((216 * Math.PI) / 180),
-      y: centerY + radius * Math.cos((216 * Math.PI) / 180),
-    },
-    {
-      id: 4,
-      label: "E",
-      x: centerX + radius * Math.sin((288 * Math.PI) / 180),
-      y: centerY + radius * Math.cos((288 * Math.PI) / 180),
-    },
-    {
-      id: 5,
-      label: "F",
-      x: centerX + radius * Math.sin((360 * Math.PI) / 180),
-      y: centerY + radius * Math.cos((360 * Math.PI) / 180),
-    },
+    { id: 0, label: "A", x: centerX + radius * Math.sin(0), y: centerY + radius * Math.cos(0) },
+    { id: 1, label: "B", x: centerX + radius * Math.sin((72 * Math.PI) / 180), y: centerY + radius * Math.cos((72 * Math.PI) / 180) },
+    { id: 2, label: "C", x: centerX + radius * Math.sin((144 * Math.PI) / 180), y: centerY + radius * Math.cos((144 * Math.PI) / 180) },
+    { id: 3, label: "D", x: centerX + radius * Math.sin((216 * Math.PI) / 180), y: centerY + radius * Math.cos((216 * Math.PI) / 180) },
+    { id: 4, label: "E", x: centerX + radius * Math.sin((288 * Math.PI) / 180), y: centerY + radius * Math.cos((288 * Math.PI) / 180) },
+    { id: 5, label: "F", x: centerX + radius * Math.sin((360 * Math.PI) / 180), y: centerY + radius * Math.cos((360 * Math.PI) / 180) },
   ];
 
   edgesList.value = [
@@ -462,7 +457,7 @@ const loadExample = () => {
     { id: "4-5", from: 4, to: 5, weight: 5 },
   ];
 
-  mstEdges.value = [];
+  selectedEdges.value = [];
   totalWeight.value = 0;
   steps.value = [];
 
@@ -479,7 +474,7 @@ const loadExample = () => {
 const resetGraph = () => {
   nodes.value = [];
   edgesList.value = [];
-  mstEdges.value = [];
+  selectedEdges.value = [];
   totalWeight.value = 0;
   steps.value = [];
   drawGraph();
@@ -488,7 +483,7 @@ const resetGraph = () => {
   setTimeout(() => (statusMessage.value = ""), 2000);
 };
 
-// ============ ALGORITMO DE KRUSKAL ============
+// ============ ALGORITMO DE KRUSKAL (MIN/MAX) ============
 
 const find = (parent, i) => {
   if (parent[i] === i) return i;
@@ -527,7 +522,11 @@ const runKruskal = async () => {
   isExecuting.value = true;
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  const sortedEdges = [...edgesList.value].sort((a, b) => a.weight - b.weight);
+  // Ordenar según minimizar o maximizar
+  const sortedEdges = [...edgesList.value].sort((a, b) => 
+    optimizationType.value === 'min' ? a.weight - b.weight : b.weight - a.weight
+  );
+  
   const parent = [];
   const rank = [];
   const result = [];
@@ -538,9 +537,11 @@ const runKruskal = async () => {
     rank[i] = 0;
   }
 
+  const objetivo = optimizationType.value === 'min' ? 'mínimo' : 'máximo';
   stepList.push(
-    `🎯 <strong>INICIO:</strong> ${nodes.value.length} nodos, cada uno en su propio conjunto`,
+    `🎯 <strong>INICIO:</strong> ${nodes.value.length} nodos, cada uno en su propio conjunto. Objetivo: ${objetivo}`,
   );
+  stepList.push(`📋 <strong>ORDENAMIENTO:</strong> Aristas ordenadas por peso de ${optimizationType.value === 'min' ? 'menor a mayor' : 'mayor a menor'}`);
 
   let e = 0;
   let i = 0;
@@ -558,17 +559,17 @@ const runKruskal = async () => {
       result.push(nextEdge);
       union(parent, rank, x, y);
       stepList.push(
-        `  ✅ <strong>ACEPTADA:</strong> No forma ciclo → Agregada al MST`,
+        `  ✅ <strong>ACEPTADA:</strong> No forma ciclo → Agregada al ${optimizationType.value === 'min' ? 'MST' : 'árbol máximo'}`,
       );
       e++;
     } else {
       stepList.push(`  ❌ <strong>RECHAZADA:</strong> Formaría un ciclo`);
     }
 
-    mstEdges.value = [...result];
+    selectedEdges.value = [...result];
     totalWeight.value = result.reduce((sum, edge) => sum + edge.weight, 0);
     drawGraph(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
   if (result.length !== nodes.value.length - 1) {
@@ -578,15 +579,16 @@ const runKruskal = async () => {
     statusMessage.value = "⚠️ El grafo no es conexo";
     statusTone.value = "error";
   } else {
+    const tipo = optimizationType.value === 'min' ? 'mínimo' : 'máximo';
     stepList.push(
-      `✅ <strong>FINALIZADO!</strong> MST encontrado con peso total: ${totalWeight.value}`,
+      `✅ <strong>FINALIZADO!</strong> Árbol de expansión ${tipo} encontrado con peso total: ${totalWeight.value}`,
     );
-    statusMessage.value = `✅ MST encontrado con peso total: ${totalWeight.value}`;
+    statusMessage.value = `✅ Árbol ${tipo} encontrado con peso total: ${totalWeight.value}`;
     statusTone.value = "success";
   }
 
   steps.value = stepList;
-  mstEdges.value = result;
+  selectedEdges.value = result;
   totalWeight.value = result.reduce((sum, edge) => sum + edge.weight, 0);
   drawGraph(true);
 
@@ -596,7 +598,7 @@ const runKruskal = async () => {
 
 // ============ DIBUJO DEL GRAFO ============
 
-const drawGraph = (highlightMST = false) => {
+const drawGraph = (highlightSelected = false) => {
   if (!canvasRef.value) return;
 
   const canvas = canvasRef.value;
@@ -632,14 +634,14 @@ const drawGraph = (highlightMST = false) => {
 
     if (!fromNode || !toNode) return;
 
-    const isMST = highlightMST && mstEdges.value.some((e) => e.id === edge.id);
+    const isSelected = highlightSelected && selectedEdges.value.some((e) => e.id === edge.id);
 
     ctx.beginPath();
     ctx.moveTo(fromNode.x, fromNode.y);
     ctx.lineTo(toNode.x, toNode.y);
 
-    if (isMST) {
-      ctx.strokeStyle = "#10b981";
+    if (isSelected) {
+      ctx.strokeStyle = optimizationType.value === 'min' ? "#10b981" : "#f97316";
       ctx.lineWidth = 4;
       ctx.setLineDash([]);
     } else {
@@ -658,12 +660,10 @@ const drawGraph = (highlightMST = false) => {
     const offsetX = Math.sin(angle) * 12;
     const offsetY = -Math.cos(angle) * 12;
 
-    ctx.fillStyle = isMST ? "#10b981" : "#475569";
-    ctx.font = "bold 14px 'Segoe UI'";
-    ctx.shadowBlur = 0;
     ctx.fillStyle = "white";
     ctx.fillRect(midX + offsetX - 15, midY + offsetY - 10, 30, 20);
-    ctx.fillStyle = isMST ? "#10b981" : "#475569";
+    ctx.fillStyle = isSelected ? (optimizationType.value === 'min' ? "#10b981" : "#f97316") : "#475569";
+    ctx.font = "bold 14px 'Segoe UI'";
     ctx.fillText(edge.weight, midX + offsetX, midY + offsetY + 4);
   });
 
@@ -840,6 +840,7 @@ const exportData = () => {
   const payload = {
     nodes: nodes.value,
     edges: edgesList.value,
+    optimizationType: optimizationType.value,
     exportDate: new Date().toISOString(),
   };
 
@@ -870,7 +871,10 @@ const importData = (event) => {
         nodes.value = data.nodes;
         edgesList.value = data.edges;
         nodeCount.value = nodes.value.length;
-        mstEdges.value = [];
+        if (data.optimizationType) {
+          optimizationType.value = data.optimizationType;
+        }
+        selectedEdges.value = [];
         totalWeight.value = 0;
         steps.value = [];
         selectedNode.value = null;
@@ -990,7 +994,14 @@ watch(nodeCount, () => {
   font-weight: bold;
   font-size: 1rem;
   color: white;
+}
+
+.badge-min {
   background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.badge-max {
+  background: linear-gradient(135deg, #f97316, #ea580c);
 }
 
 /* Main Layout */
@@ -1069,6 +1080,29 @@ watch(nodeCount, () => {
   font-weight: bold;
   min-width: 40px;
   text-align: center;
+}
+
+/* Optimization Toggle */
+.optimization-toggle {
+  display: flex;
+  gap: 12px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.toggle-btn.active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
 }
 
 .action-buttons {
@@ -1216,7 +1250,7 @@ watch(nodeCount, () => {
   color: #004085;
 }
 
-/* Graph Card - AHORA MÁS GRANDE */
+/* Graph Card */
 .graph-card {
   background: white;
   border-radius: 24px;
@@ -1277,15 +1311,9 @@ watch(nodeCount, () => {
   border-radius: 50%;
 }
 
-.node-dot {
-  background: #3b82f6;
-}
-.mst-dot {
-  background: #10b981;
-}
-.normal-dot {
-  background: #94a3b8;
-}
+.node-dot { background: #3b82f6; }
+.mst-dot { background: #10b981; }
+.normal-dot { background: #94a3b8; }
 
 .graph-container {
   position: relative;
@@ -1409,6 +1437,10 @@ watch(nodeCount, () => {
   background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
+.orange-gradient {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
 .card-header h4 {
   margin: 0 0 4px;
   font-size: 0.9rem;
@@ -1429,7 +1461,12 @@ watch(nodeCount, () => {
 }
 
 .value-min {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.value-max {
+  background: linear-gradient(135deg, #f97316, #ea580c);
   color: white;
 }
 
@@ -1693,34 +1730,18 @@ watch(nodeCount, () => {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive */
@@ -1735,12 +1756,10 @@ watch(nodeCount, () => {
   .main-layout {
     grid-template-columns: 1fr;
   }
-
   .config-card,
   .results-card {
     position: static;
   }
-
   .hero-section {
     flex-direction: column;
     text-align: center;
@@ -1751,23 +1770,18 @@ watch(nodeCount, () => {
   .kruskal-page {
     padding: 16px;
   }
-
   .hero-section {
     padding: 24px;
   }
-
   .hero-content h1 {
     font-size: 1.5rem;
   }
-
   .graph-container {
     min-height: 400px;
   }
-
   .graph-canvas {
     height: 400px;
   }
-
   .graph-header {
     flex-direction: column;
     align-items: flex-start;
