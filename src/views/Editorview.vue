@@ -54,6 +54,15 @@
         <span class="tab-icon">🌳</span>
         <span>Kruskal - MST</span>
       </button>
+
+      <button
+        @click="activeTab = 'dijkstra'"
+        :class="{ active: activeTab === 'dijkstra' }"
+        class="tab-btn"
+      >
+        <span class="tab-icon">🛣️</span>
+        <span>Dijkstra</span>
+      </button>
     </div>
 
     <div v-if="activeTab === 'editor'" class="editor-layout">
@@ -82,6 +91,10 @@
     <div v-else-if="activeTab === 'kruskal'" class="kruskal-layout">
       <KruskalView />
     </div>
+
+    <div v-else-if="activeTab === 'dijkstra'" class="dijkstra-layout">
+      <DijkstraView />
+    </div>
   </div>
 </template>
 
@@ -94,6 +107,7 @@ import AsignacionView from "./AsignacionView.vue";
 import NorthwestView from "./NorthwestView.vue";
 import SortView from "./SortView.vue";
 import KruskalView from "./KruskalView.vue";
+import DijkstraView from "./DijkstraView.vue";
 
 const activeTab = ref("editor");
 </script>
@@ -195,6 +209,13 @@ const activeTab = ref("editor");
   flex: 1;
   overflow: auto;
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+/* Layout de Dijkstra - Camino Más Corto */
+.dijkstra-layout {
+  flex: 1;
+  overflow: auto;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 @media (max-width: 768px) {
