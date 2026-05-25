@@ -46,67 +46,15 @@
             </button>
           </div>
 
-          <div class="manual-editor">
-            <h4>Editor manual</h4>
-            <div class="inline-form">
-              <input
-                v-model="newNodeLabel"
-                class="editor-input"
-                placeholder="Nombre del nodo"
-                @keyup.enter="addManualNode"
-              />
-              <button @click="addManualNode" class="btn-outline">Agregar nodo</button>
+          <div class="graph-tools">
+            <h4>Herramientas</h4>
+            <div class="tool-grid">
+              <button @click="setEditorMode('move')" :class="{ active: editorMode === 'move' }" class="tool-btn">Mover</button>
+              <button @click="setEditorMode('node')" :class="{ active: editorMode === 'node' }" class="tool-btn">Nodo</button>
+              <button @click="setEditorMode('edge')" :class="{ active: editorMode === 'edge' }" class="tool-btn">Arista</button>
+              <button @click="setEditorMode('delete')" :class="{ active: editorMode === 'delete' }" class="tool-btn danger">Borrar</button>
             </div>
-
-            <div class="edge-form">
-              <select v-model="edgeFrom" class="editor-input">
-                <option :value="null" disabled>Desde</option>
-                <option v-for="node in nodes" :key="`from-${node.id}`" :value="node.id">
-                  {{ node.label }}
-                </option>
-              </select>
-              <select v-model="edgeTo" class="editor-input">
-                <option :value="null" disabled>Hasta</option>
-                <option v-for="node in nodes" :key="`to-${node.id}`" :value="node.id">
-                  {{ node.label }}
-                </option>
-              </select>
-              <input
-                v-model.number="edgeWeight"
-                class="editor-input weight-input"
-                type="number"
-                min="1"
-                placeholder="Peso"
-                @keyup.enter="addManualEdge"
-              />
-              <button @click="addManualEdge" class="btn-outline">Agregar arista</button>
-            </div>
-
-            <div class="editor-lists">
-              <div class="editor-list">
-                <strong>Nodos</strong>
-                <div v-for="node in nodes" :key="`node-row-${node.id}`" class="editor-row">
-                  <span>{{ node.label }}</span>
-                  <div class="row-actions">
-                    <button @click="renameNode(node.id)" class="mini-btn">Editar</button>
-                    <button @click="deleteNodeById(node.id)" class="mini-btn danger">Eliminar</button>
-                  </div>
-                </div>
-                <p v-if="nodes.length === 0" class="empty-editor">Sin nodos</p>
-              </div>
-
-              <div class="editor-list">
-                <strong>Aristas</strong>
-                <div v-for="edge in edgesList" :key="`edge-row-${edge.id}`" class="editor-row">
-                  <span>{{ getNodeLabel(edge.from) }} - {{ getNodeLabel(edge.to) }}: {{ edge.weight }}</span>
-                  <div class="row-actions">
-                    <button @click="editEdge(edge.id)" class="mini-btn">Editar</button>
-                    <button @click="deleteEdgeById(edge.id)" class="mini-btn danger">Eliminar</button>
-                  </div>
-                </div>
-                <p v-if="edgesList.length === 0" class="empty-editor">Sin aristas</p>
-              </div>
-            </div>
+            <p class="tool-status">{{ editorStatus }}</p>
           </div>
 
           <div class="action-buttons">
@@ -183,10 +131,10 @@
 
         <div class="graph-instructions">
           💡 <strong>Instrucciones:</strong>
+          <span>Modo Nodo: clic en espacio vacío</span>
+          <span>| Modo Arista: clic origen y destino</span>
+          <span>| Mover: arrastra nodos</span>
           <span>✏️ Doble clic en arista → Editar peso</span>
-          <span>| ✋ Arrastra nodos → Reubicar</span>
-          <span>| 🖱️ Clic en nodo → Seleccionar</span>
-          <span>| 🗑️ Suprimir → Eliminar elemento</span>
         </div>
 
         <div class="graph-container">
@@ -398,10 +346,10 @@ const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
 const exportFileName = ref("kruskal");
-const newNodeLabel = ref("");
-const edgeFrom = ref(null);
-const edgeTo = ref(null);
 const edgeWeight = ref(1);
+const editorMode = ref("move");
+const edgeStartNode = ref(null);
+const editorStatus = ref("Modo mover: arrastra nodos para reubicarlos.");
 
 // Datos del grafo
 const nodes = ref([]);
@@ -436,6 +384,20 @@ const showMessage = (text, type) => {
   }, 2500);
 };
 
+const setEditorMode = (mode) => {
+  editorMode.value = mode;
+  edgeStartNode.value = null;
+  selectedNode.value = null;
+  const statusByMode = {
+    move: "Modo mover: arrastra nodos para reubicarlos.",
+    node: "Modo nodo: haz clic en un espacio vacío para crear un nodo.",
+    edge: "Modo arista: selecciona el nodo origen y luego el destino.",
+    delete: "Modo borrar: haz clic en un nodo o arista para eliminarlo.",
+  };
+  editorStatus.value = statusByMode[mode];
+  drawGraph(true);
+};
+
 const resetResults = () => {
   selectedEdges.value = [];
   totalWeight.value = 0;
@@ -451,27 +413,22 @@ const getDefaultNodeLabel = () => {
   return nodeLabels[nextIndex % nodeLabels.length] + (nextIndex >= nodeLabels.length ? Math.floor(nextIndex / nodeLabels.length) + 1 : "");
 };
 
-const addManualNode = () => {
-  const canvas = canvasRef.value;
-  const width = canvas?.clientWidth || canvasWidth;
-  const height = canvas?.clientHeight || canvasHeight;
+const addNodeAt = (x, y) => {
   const id = nodes.value.length;
-  const label = newNodeLabel.value.trim() || getDefaultNodeLabel();
-  const angle = (id * 2 * Math.PI) / Math.max(id + 1, 3) - Math.PI / 2;
-  const radius = Math.min(width, height) * 0.28;
+  const label = prompt("Nombre del nodo:", getDefaultNodeLabel());
+  if (label === null) return;
 
   nodes.value.push({
     id,
-    label,
-    x: width / 2 + radius * Math.cos(angle),
-    y: height / 2 + radius * Math.sin(angle),
+    label: label.trim() || getDefaultNodeLabel(),
+    x,
+    y,
   });
 
-  newNodeLabel.value = "";
   syncNodeCount();
   resetResults();
-  nextTick(() => drawGraph());
-  showMessage(`Nodo ${label} agregado`, "success");
+  drawGraph();
+  showMessage("Nodo agregado", "success");
 };
 
 const remapGraphAfterNodeDelete = (nodeId) => {
@@ -505,40 +462,9 @@ const deleteNodeById = (nodeId) => {
   showMessage("Nodo eliminado", "neutral");
 };
 
-const renameNode = (nodeId) => {
-  const node = nodes.value.find((n) => n.id === nodeId);
-  if (!node) return;
-
-  const label = prompt("Nuevo nombre del nodo:", node.label);
-  if (label === null) return;
-
-  const cleanLabel = label.trim();
-  if (!cleanLabel) {
-    showMessage("El nombre no puede estar vacio", "error");
-    return;
-  }
-
-  node.label = cleanLabel;
-  resetResults();
-  drawGraph(true);
-  showMessage("Nodo actualizado", "success");
-};
-
-const addManualEdge = () => {
-  const from = Number(edgeFrom.value);
-  const to = Number(edgeTo.value);
-  const weight = Number(edgeWeight.value);
-
-  if (Number.isNaN(from) || Number.isNaN(to)) {
-    showMessage("Selecciona origen y destino", "error");
-    return;
-  }
+const addEdgeBetween = (from, to) => {
   if (from === to) {
     showMessage("La arista necesita dos nodos distintos", "error");
-    return;
-  }
-  if (!Number.isFinite(weight) || weight <= 0) {
-    showMessage("El peso debe ser mayor a 0", "error");
     return;
   }
 
@@ -551,31 +477,22 @@ const addManualEdge = () => {
     return;
   }
 
-  const a = Math.min(from, to);
-  const b = Math.max(from, to);
-  edgesList.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
-  resetResults();
-  drawGraph();
-  showMessage("Arista agregada", "success");
-};
+  const value = prompt(`Peso de la arista ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
+  if (value === null) return;
 
-const editEdge = (edgeId) => {
-  const edge = edgesList.value.find((item) => item.id === edgeId);
-  if (!edge) return;
-
-  const newWeight = prompt(`Nuevo peso para ${getNodeLabel(edge.from)} - ${getNodeLabel(edge.to)}:`, edge.weight);
-  if (newWeight === null) return;
-
-  const weight = Number(newWeight);
+  const weight = Number(value);
   if (!Number.isFinite(weight) || weight <= 0) {
     showMessage("El peso debe ser mayor a 0", "error");
     return;
   }
 
-  edge.weight = weight;
+  const a = Math.min(from, to);
+  const b = Math.max(from, to);
+  edgesList.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
+  edgeWeight.value = weight;
   resetResults();
-  drawGraph(true);
-  showMessage("Arista actualizada", "success");
+  drawGraph();
+  showMessage("Arista agregada", "success");
 };
 
 const deleteEdgeById = (edgeId) => {
@@ -696,8 +613,6 @@ const resetGraph = () => {
   nodes.value = [];
   edgesList.value = [];
   selectedNode.value = null;
-  edgeFrom.value = null;
-  edgeTo.value = null;
   syncNodeCount();
   resetResults();
   drawGraph();
@@ -942,9 +857,55 @@ const findNodeAt = (x, y) => {
   return null;
 };
 
+const findEdgeAt = (x, y) => {
+  for (const edge of edgesList.value) {
+    const fromNode = nodes.value.find((n) => n.id === edge.from);
+    const toNode = nodes.value.find((n) => n.id === edge.to);
+    if (!fromNode || !toNode) continue;
+
+    const midX = (fromNode.x + toNode.x) / 2;
+    const midY = (fromNode.y + toNode.y) / 2;
+    const dx = midX - x;
+    const dy = midY - y;
+    if (Math.sqrt(dx * dx + dy * dy) < 25) return edge;
+  }
+  return null;
+};
+
 const handleCanvasClick = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
+
+  if (editorMode.value === "node") {
+    if (!node) addNodeAt(pos.x, pos.y);
+    return;
+  }
+
+  if (editorMode.value === "edge") {
+    if (!node) return;
+    if (edgeStartNode.value === null) {
+      edgeStartNode.value = node.id;
+      selectedNode.value = node.id;
+      editorStatus.value = `Origen ${node.label} seleccionado. Ahora elige destino.`;
+      drawGraph(true);
+    } else {
+      addEdgeBetween(edgeStartNode.value, node.id);
+      edgeStartNode.value = null;
+      selectedNode.value = null;
+      editorStatus.value = "Modo arista: selecciona el nodo origen y luego el destino.";
+    }
+    return;
+  }
+
+  if (editorMode.value === "delete") {
+    if (node) {
+      deleteNodeById(node.id);
+      return;
+    }
+    const edge = findEdgeAt(pos.x, pos.y);
+    if (edge) deleteEdgeById(edge.id);
+    return;
+  }
 
   if (node) {
     selectedNode.value = node.id;
@@ -962,7 +923,7 @@ const handleMouseDown = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
 
-  if (node) {
+  if (node && editorMode.value === "move") {
     dragging = true;
     dragNode = node;
     e.preventDefault();
@@ -1013,6 +974,10 @@ const handleDoubleClick = (e) => {
 };
 
 const handleKeyDown = (e) => {
+  if (e.key === "v" || e.key === "V") setEditorMode("move");
+  if (e.key === "n" || e.key === "N") setEditorMode("node");
+  if (e.key === "e" || e.key === "E") setEditorMode("edge");
+  if (e.key === "d" || e.key === "D") setEditorMode("delete");
   if (e.key === "Delete" && selectedNode.value !== null) {
     deleteNodeById(selectedNode.value);
   }
@@ -1029,7 +994,12 @@ const closeHelpModal = () => {
 const decrementNodes = () => {
   if (nodes.value.length > 0) deleteNodeById(nodes.value[nodes.value.length - 1].id);
 };
-const incrementNodes = () => addManualNode();
+const incrementNodes = () => {
+  const canvas = canvasRef.value;
+  const width = canvas?.clientWidth || canvasWidth;
+  const height = canvas?.clientHeight || canvasHeight;
+  addNodeAt(width / 2, height / 2);
+};
 
 // Exportar/Importar
 const exportData = () => {
@@ -1311,120 +1281,55 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.manual-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.graph-tools {
   padding: 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
 }
 
-.manual-editor h4 {
-  margin: 0;
+.graph-tools h4 {
+  margin: 0 0 10px;
   font-size: 0.9rem;
   color: #334155;
 }
 
-.inline-form,
-.edge-form {
+.tool-grid {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
-.edge-form {
-  grid-template-columns: 1fr 1fr 72px;
-}
-
-.edge-form .btn-outline {
-  grid-column: 1 / -1;
-}
-
-.editor-input {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
+.tool-btn {
+  padding: 9px 10px;
   border: 1px solid #cbd5e1;
-  border-radius: 10px;
   background: white;
-  font-size: 0.8rem;
-}
-
-.editor-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
-}
-
-.editor-lists {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.editor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.editor-list strong {
   color: #475569;
-  font-size: 0.78rem;
-}
-
-.editor-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  background: white;
-  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 0.78rem;
-}
-
-.editor-row span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.row-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.mini-btn {
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #475569;
-  border-radius: 8px;
-  padding: 4px 6px;
   cursor: pointer;
-  font-size: 0.68rem;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.mini-btn:hover {
+.tool-btn:hover,
+.tool-btn.active {
   border-color: #667eea;
-  color: #667eea;
+  background: #eef2ff;
+  color: #4f46e5;
 }
 
-.mini-btn.danger:hover {
+.tool-btn.danger:hover,
+.tool-btn.danger.active {
   border-color: #ef4444;
-  color: #ef4444;
   background: #fef2f2;
+  color: #dc2626;
 }
 
-.empty-editor {
-  margin: 0;
-  color: #94a3b8;
+.tool-status {
+  margin: 10px 0 0;
+  color: #64748b;
   font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .btn-outline {
