@@ -89,6 +89,12 @@
                 getNodeLabel(sourceNode)
               }}</strong>
             </div>
+            <div class="info-status">
+              <strong>Destino:</strong>
+              <strong class="target-badge">{{
+                targetNode === null ? "Sin destino" : getNodeLabel(targetNode)
+              }}</strong>
+            </div>
           </div>
 
           <div class="origen-selector">
@@ -100,6 +106,22 @@
                 @click="selectSourceNode(node.id)"
                 :class="{ active: sourceNode === node.id }"
                 class="origen-btn"
+              >
+                {{ node.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="origen-selector">
+            <label>Seleccionar nodo destino:</label>
+            <div class="origen-buttons">
+              <button
+                v-for="node in nodes"
+                :key="`target-${node.id}`"
+                @click="selectTargetNode(node.id)"
+                :class="{ active: targetNode === node.id }"
+                :disabled="sourceNode === node.id"
+                class="origen-btn target-btn"
               >
                 {{ node.label }}
               </button>
@@ -211,6 +233,22 @@
             </div>
           </div>
 
+          <div class="result-section-card" v-if="targetNode !== null && distances.length > 0">
+            <div class="section-header">
+              <div class="section-title">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 2a6 6 0 016 6c0 4.5-6 10-6 10S4 12.5 4 8a6 6 0 016-6zm0 8a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+                <h4>Ruta al destino {{ getNodeLabel(targetNode) }}</h4>
+              </div>
+            </div>
+            <div class="target-route-card">
+              <span class="target-route-label">Distancia</span>
+              <strong>{{ getTargetDistance() === Infinity ? "No alcanzable" : getTargetDistance() }}</strong>
+              <span class="target-route-path">{{ getPathString(targetNode) }}</span>
+            </div>
+          </div>
+
           <!-- Tabla de rutas -->
           <div class="result-section-card" v-if="distances.length > 0">
             <div class="section-header">
@@ -311,6 +349,7 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue";
 // Estado
 const nodeCount = ref(6);
 const sourceNode = ref(0);
+const targetNode = ref(null);
 const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showHelpModal = ref(false);
@@ -334,6 +373,7 @@ const selectedNode = ref(null);
 
 // Canvas
 const canvasRef = ref(null);
+const importInputRef = ref(null);
 let ctx = null;
 let dragging = false;
 let dragNode = null;
@@ -364,6 +404,11 @@ const getPathString = (targetId) => {
   return path.join(" → ");
 };
 
+const getTargetDistance = () => {
+  if (targetNode.value === null || distances.value.length === 0) return null;
+  return distances.value[targetNode.value];
+};
+
 const showMessage = (text, type) => {
   statusMessage.value = text;
   statusTone.value = type;
@@ -391,6 +436,30 @@ const resetResults = () => {
   previous.value = [];
   pathEdges.value = [];
   steps.value = [];
+};
+
+const buildPathEdgesTo = (targetId, prev = previous.value) => {
+  const routeEdges = [];
+  if (targetId === null || targetId === sourceNode.value || prev[targetId] === -1 || prev[targetId] === undefined) {
+    return routeEdges;
+  }
+
+  let current = targetId;
+  while (prev[current] !== -1 && prev[current] !== undefined) {
+    const from = prev[current];
+    const to = current;
+    routeEdges.push({ from, to });
+    current = from;
+    if (current === sourceNode.value) break;
+  }
+  return routeEdges;
+};
+
+const updateTargetPathHighlight = () => {
+  if (distances.value.length > 0 && targetNode.value !== null) {
+    pathEdges.value = buildPathEdgesTo(targetNode.value);
+  }
+  drawGraph(true);
 };
 
 const getDefaultNodeLabel = () => {
@@ -443,10 +512,17 @@ const remapGraphAfterNodeDelete = (nodeId) => {
 
   if (!nodes.value.length) {
     sourceNode.value = null;
+    targetNode.value = null;
   } else if (sourceNode.value === nodeId || sourceNode.value === null || sourceNode.value >= nodes.value.length) {
     sourceNode.value = 0;
   } else {
     sourceNode.value = idMap.get(sourceNode.value) ?? 0;
+  }
+
+  if (nodes.value.length && targetNode.value !== null && targetNode.value !== nodeId) {
+    targetNode.value = idMap.get(targetNode.value) ?? null;
+  } else {
+    targetNode.value = nodes.value.find((node) => node.id !== sourceNode.value)?.id ?? null;
   }
   selectedNode.value = null;
   syncNodeCount();
@@ -503,8 +579,23 @@ const deleteEdgeById = (edgeId) => {
 const selectSourceNode = (id) => {
   sourceNode.value = id;
   selectedNode.value = id;
+  if (targetNode.value === id) {
+    targetNode.value = nodes.value.find((node) => node.id !== id)?.id ?? null;
+  }
+  resetResults();
   drawGraph();
   showMessage(`🎯 Origen cambiado a ${getNodeLabel(id)}`, "success");
+};
+
+const selectTargetNode = (id) => {
+  if (id === sourceNode.value) {
+    showMessage("El destino debe ser diferente al origen", "error");
+    return;
+  }
+
+  targetNode.value = id;
+  updateTargetPathHighlight();
+  showMessage(`Destino cambiado a ${getNodeLabel(id)}`, "success");
 };
 
 const generateRandomGraph = () => {
@@ -593,6 +684,7 @@ const loadExample = () => {
   ];
 
   sourceNode.value = 0;
+  targetNode.value = 3;
   syncNodeCount();
   resetResults();
 
@@ -608,6 +700,7 @@ const clearGraph = () => {
   nodes.value = [];
   edges.value = [];
   sourceNode.value = null;
+  targetNode.value = null;
   selectedNode.value = null;
   syncNodeCount();
   resetResults();
@@ -626,6 +719,10 @@ const runDijkstra = async () => {
   if (sourceNode.value >= nodes.value.length) {
     showMessage("❌ Nodo origen inválido", "error");
     return;
+  }
+
+  if (targetNode.value !== null && targetNode.value >= nodes.value.length) {
+    targetNode.value = null;
   }
 
   isExecuting.value = true;
@@ -711,9 +808,16 @@ const runDijkstra = async () => {
     }
   }
 
-  pathEdges.value = newPathEdges;
+  pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value, prev) : newPathEdges;
   
   const reached = dist.filter((d) => d !== Infinity && d !== 0).length;
+  if (targetNode.value !== null) {
+    const targetDistance = dist[targetNode.value];
+    const targetResult = targetDistance === Infinity
+      ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
+      : `Ruta a ${getNodeLabel(targetNode.value)} con distancia ${targetDistance}: ${getPathString(targetNode.value)}`;
+    stepList.push(`âœ… <strong>DESTINO:</strong> ${targetResult}`);
+  }
   stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
   steps.value = [...stepList];
   
@@ -803,6 +907,9 @@ const drawGraph = (highlightPaths = false) => {
     if (node.id === sourceNode.value) {
       ctx.fillStyle = "#ef4444";
       ctx.shadowColor = "rgba(239, 68, 68, 0.5)";
+    } else if (node.id === targetNode.value) {
+      ctx.fillStyle = "#8b5cf6";
+      ctx.shadowColor = "rgba(139, 92, 246, 0.45)";
     } else if (node.id === edgeStartNode.value || node.id === selectedNode.value) {
       ctx.fillStyle = "#f59e0b";
       ctx.shadowColor = "rgba(245, 158, 11, 0.5)";
@@ -988,6 +1095,7 @@ const exportData = () => {
     nodes: nodes.value,
     edges: edges.value,
     sourceNode: sourceNode.value,
+    targetNode: targetNode.value,
     exportDate: new Date().toISOString(),
   };
 
@@ -1018,6 +1126,15 @@ const importData = (event) => {
           sourceNode.value = data.sourceNode;
         } else {
           sourceNode.value = nodes.value.length > 0 ? 0 : null;
+        }
+        if (
+          data.targetNode !== undefined &&
+          data.targetNode < nodes.value.length &&
+          data.targetNode !== sourceNode.value
+        ) {
+          targetNode.value = data.targetNode;
+        } else {
+          targetNode.value = nodes.value.find((node) => node.id !== sourceNode.value)?.id ?? null;
         }
         resetResults();
         nextTick(() => {
@@ -1359,6 +1476,14 @@ onUnmounted(() => {
   display: inline-block;
 }
 
+.target-badge {
+  background: #8b5cf6;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
 .origen-selector label {
   display: block;
   font-size: 0.8rem;
@@ -1388,6 +1513,17 @@ onUnmounted(() => {
   background: #ef4444;
   border-color: #ef4444;
   color: white;
+}
+
+.origen-btn.target-btn.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.origen-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-execute {
@@ -1576,6 +1712,9 @@ onUnmounted(() => {
 .source-color {
   background: #ef4444;
 }
+.target-color {
+  background: #8b5cf6;
+}
 .path-color {
   background: #10b981;
 }
@@ -1690,6 +1829,36 @@ onUnmounted(() => {
 
 .distance-value.infinite {
   color: #ef4444;
+}
+
+.target-route-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.target-route-label {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.target-route-card strong {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.target-route-path {
+  grid-column: 1 / -1;
+  color: #059669;
+  font-family: monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .section-header {

@@ -361,6 +361,7 @@ const selectedNode = ref(null);
 
 // Canvas
 const canvasRef = ref(null);
+const importInputRef = ref(null);
 let ctx = null;
 let dragging = false;
 let dragNode = null;
