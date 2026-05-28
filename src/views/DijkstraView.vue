@@ -3,10 +3,14 @@
     <div class="hero-section">
       <div class="hero-content">
         <h1>Algoritmo de Dijkstra</h1>
-        <p>Camino más corto desde un nodo origen a todos los demás nodos</p>
+        <p>
+          {{ optimizationType === 'min'
+            ? 'Camino más corto desde un nodo origen a todos los demás nodos'
+            : 'Camino simple de mayor peso desde un nodo origen a todos los demás nodos' }}
+        </p>
       </div>
       <div class="algorithm-badge">
-        🛣️ Camino Más Corto
+        {{ optimizationType === 'min' ? '🛣️ Camino Más Corto' : '🛣️ Camino Máximo' }}
       </div>
     </div>
 
@@ -158,7 +162,7 @@
             </span>
             <span class="pill pill-edge-path">
               <span class="pill-dot path-dot"></span>
-              Camino más corto
+              {{ optimizationType === 'min' ? 'Camino más corto' : 'Camino máximo' }}
             </span>
             <span class="pill pill-edge-normal">
               <span class="pill-dot normal-dot"></span>
@@ -217,8 +221,8 @@
                 </svg>
               </div>
               <div>
-                <h4>Distancias desde {{ getNodeLabel(sourceNode) }}</h4>
-                <p>Camino más corto a cada nodo</p>
+                <h4>{{ optimizationType === 'min' ? 'Distancias mínimas' : 'Pesos máximos' }} desde {{ getNodeLabel(sourceNode) }}</h4>
+                <p>{{ optimizationType === 'min' ? 'Camino más corto a cada nodo' : 'Camino simple de mayor peso a cada nodo' }}</p>
               </div>
             </div>
             
@@ -243,7 +247,7 @@
               </div>
             </div>
             <div class="target-route-card">
-              <span class="target-route-label">Distancia</span>
+              <span class="target-route-label">{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</span>
               <strong>{{ getTargetDistance() === Infinity ? "No alcanzable" : getTargetDistance() }}</strong>
               <span class="target-route-path">{{ getPathString(targetNode) }}</span>
             </div>
@@ -264,7 +268,7 @@
                 <thead>
                   <tr>
                     <th>Destino</th>
-                    <th>Distancia</th>
+                    <th>{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</th>
                     <th>Ruta</th>
                   </tr>
                 </thead>
@@ -319,19 +323,34 @@
             <div class="help-content-detailed">
               <div class="help-section">
                 <h3>🎯 ¿Qué es?</h3>
-                <p>Encuentra el camino más corto desde un nodo origen a todos los demás en un grafo con pesos positivos.</p>
+                <p>
+                  {{ optimizationType === 'min'
+                    ? 'Encuentra el camino más corto desde un nodo origen a todos los demás en un grafo con pesos positivos.'
+                    : 'Encuentra caminos simples de mayor peso desde un nodo origen, sin repetir nodos para evitar ciclos infinitos.' }}
+                </p>
               </div>
               <div class="help-section">
                 <h3>📝 Cómo funciona:</h3>
                 <div class="steps-list">
-                  <div class="step-detail"><div class="step-num">1</div><div class="step-text">Distancia al origen = 0, al resto = infinito</div></div>
-                  <div class="step-detail"><div class="step-num">2</div><div class="step-text">Seleccionar nodo no visitado con menor distancia</div></div>
-                  <div class="step-detail"><div class="step-num">3</div><div class="step-text">Actualizar distancias a sus vecinos</div></div>
-                  <div class="step-detail"><div class="step-num">4</div><div class="step-text">Repetir hasta visitar todos</div></div>
+                  <template v-if="optimizationType === 'min'">
+                    <div class="step-detail"><div class="step-num">1</div><div class="step-text">Distancia al origen = 0, al resto = infinito</div></div>
+                    <div class="step-detail"><div class="step-num">2</div><div class="step-text">Seleccionar nodo no visitado con menor distancia</div></div>
+                    <div class="step-detail"><div class="step-num">3</div><div class="step-text">Actualizar distancias a sus vecinos</div></div>
+                    <div class="step-detail"><div class="step-num">4</div><div class="step-text">Repetir hasta visitar todos</div></div>
+                  </template>
+                  <template v-else>
+                    <div class="step-detail"><div class="step-num">1</div><div class="step-text">Comenzar en el origen con peso acumulado 0</div></div>
+                    <div class="step-detail"><div class="step-num">2</div><div class="step-text">Explorar rutas simples sin repetir nodos</div></div>
+                    <div class="step-detail"><div class="step-num">3</div><div class="step-text">Guardar la ruta con mayor peso encontrada para cada destino</div></div>
+                    <div class="step-detail"><div class="step-num">4</div><div class="step-text">Resaltar la mejor ruta hacia el destino seleccionado</div></div>
+                  </template>
                 </div>
               </div>
               <div class="help-note-box">
-                <strong>💡 Nota:</strong> Los pesos deben ser positivos para que el algoritmo funcione correctamente.
+                <strong>💡 Nota:</strong>
+                {{ optimizationType === 'min'
+                  ? 'Los pesos deben ser positivos para que Dijkstra funcione correctamente.'
+                  : 'Maximizar caminos con ciclos puede crecer indefinidamente; por eso se buscan caminos simples.' }}
               </div>
             </div>
           </div>
@@ -344,7 +363,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 
 // Estado
 const nodeCount = ref(6);
@@ -367,6 +386,7 @@ const nodes = ref([]);
 const edges = ref([]);
 const distances = ref([]);
 const previous = ref([]);
+const routePaths = ref([]);
 const pathEdges = ref([]);
 const steps = ref([]);
 const selectedNode = ref(null);
@@ -391,6 +411,9 @@ const getNodeLabel = (id) => {
 
 const getPathString = (targetId) => {
   if (targetId === sourceNode.value) return `${getNodeLabel(sourceNode.value)}`;
+  if (routePaths.value[targetId]?.length) {
+    return routePaths.value[targetId].map((nodeId) => getNodeLabel(nodeId)).join(" → ");
+  }
   if (previous.value[targetId] === -1 || previous.value[targetId] === undefined)
     return "No hay ruta";
 
@@ -434,11 +457,68 @@ const setEditorMode = (mode) => {
 const resetResults = () => {
   distances.value = [];
   previous.value = [];
+  routePaths.value = [];
   pathEdges.value = [];
   steps.value = [];
 };
 
+const pathToEdges = (path) => {
+  const routeEdges = [];
+  if (!path || path.length < 2) return routeEdges;
+
+  for (let i = 1; i < path.length; i++) {
+    routeEdges.push({ from: path[i - 1], to: path[i] });
+  }
+  return routeEdges;
+};
+
+const collectPathEdges = (paths) => {
+  const routeEdges = [];
+  paths.forEach((path) => {
+    pathToEdges(path).forEach((edge) => {
+      const exists = routeEdges.some(
+        (item) =>
+          (item.from === edge.from && item.to === edge.to) ||
+          (item.from === edge.to && item.to === edge.from),
+      );
+      if (!exists) routeEdges.push(edge);
+    });
+  });
+  return routeEdges;
+};
+
+const buildRoutePathsFromPrevious = (prev, n) => {
+  const paths = Array(n).fill(null);
+  if (sourceNode.value !== null) {
+    paths[sourceNode.value] = [sourceNode.value];
+  }
+
+  for (let target = 0; target < n; target++) {
+    if (target === sourceNode.value || prev[target] === -1 || prev[target] === undefined) continue;
+
+    const path = [];
+    const seen = new Set();
+    let current = target;
+    while (current !== -1 && current !== undefined && !seen.has(current)) {
+      seen.add(current);
+      path.unshift(current);
+      if (current === sourceNode.value) break;
+      current = prev[current];
+    }
+
+    if (path[0] === sourceNode.value) {
+      paths[target] = path;
+    }
+  }
+
+  return paths;
+};
+
 const buildPathEdgesTo = (targetId, prev = previous.value) => {
+  if (routePaths.value[targetId]?.length) {
+    return pathToEdges(routePaths.value[targetId]);
+  }
+
   const routeEdges = [];
   if (targetId === null || targetId === sourceNode.value || prev[targetId] === -1 || prev[targetId] === undefined) {
     return routeEdges;
@@ -461,6 +541,11 @@ const updateTargetPathHighlight = () => {
   }
   drawGraph(true);
 };
+
+watch(optimizationType, () => {
+  resetResults();
+  drawGraph();
+});
 
 const getDefaultNodeLabel = () => {
   const nextIndex = nodes.value.length;
@@ -731,17 +816,87 @@ const runDijkstra = async () => {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   const n = nodes.value.length;
-  const dist = Array(n).fill(Infinity);
+  const isMinimizing = optimizationType.value === "min";
+  const dist = Array(n).fill(isMinimizing ? Infinity : -Infinity);
   const prev = Array(n).fill(-1);
-  const visited = Array(n).fill(false);
 
   const edgesMap = new Map();
+  const adjacency = Array.from({ length: n }, () => []);
   edges.value.forEach((edge) => {
     edgesMap.set(`${edge.from}-${edge.to}`, edge.weight);
     edgesMap.set(`${edge.to}-${edge.from}`, edge.weight);
+    adjacency[edge.from]?.push({ to: edge.to, weight: edge.weight });
+    adjacency[edge.to]?.push({ to: edge.from, weight: edge.weight });
   });
 
   dist[sourceNode.value] = 0;
+  routePaths.value = [];
+  pathEdges.value = [];
+  previous.value = [...prev];
+  distances.value = [...dist];
+
+  if (!isMinimizing) {
+    const bestPaths = Array(n).fill(null);
+    bestPaths[sourceNode.value] = [sourceNode.value];
+    stepList.push(`🎯 <strong>INICIO:</strong> Peso acumulado en <strong>${getNodeLabel(sourceNode.value)}</strong> = 0. Se buscarán caminos simples máximos.`);
+    steps.value = [...stepList];
+
+    const visited = Array(n).fill(false);
+    const dfs = async (u, currentWeight, path) => {
+      visited[u] = true;
+
+      for (const edge of adjacency[u]) {
+        const v = edge.to;
+        if (visited[v]) continue;
+
+        const newWeight = currentWeight + edge.weight;
+        const newPath = [...path, v];
+        if (newWeight > dist[v]) {
+          const oldStr = dist[v] === -Infinity ? "-∞" : dist[v];
+          dist[v] = newWeight;
+          prev[v] = u;
+          bestPaths[v] = newPath;
+          stepList.push(`  ↳ <strong>Mejorando ${getNodeLabel(v)}:</strong> ${oldStr} → ${newWeight} (ruta ${newPath.map((nodeId) => getNodeLabel(nodeId)).join(" → ")})`);
+          distances.value = [...dist];
+          previous.value = [...prev];
+          routePaths.value = [...bestPaths];
+          pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value) : collectPathEdges(bestPaths);
+          steps.value = [...stepList];
+          drawGraph(true);
+          await new Promise((resolve) => setTimeout(resolve, 180));
+        }
+
+        await dfs(v, newWeight, newPath);
+      }
+
+      visited[u] = false;
+    };
+
+    await dfs(sourceNode.value, 0, [sourceNode.value]);
+
+    routePaths.value = bestPaths;
+    distances.value = dist.map((value) => (value === -Infinity ? Infinity : value));
+    previous.value = [...prev];
+    pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value) : collectPathEdges(bestPaths);
+
+    const reached = distances.value.filter((d) => d !== Infinity && d !== 0).length;
+    if (targetNode.value !== null) {
+      const targetDistance = distances.value[targetNode.value];
+      const targetResult = targetDistance === Infinity
+        ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
+        : `Ruta máxima a ${getNodeLabel(targetNode.value)} con peso ${targetDistance}: ${getPathString(targetNode.value)}`;
+      stepList.push(`✅ <strong>DESTINO:</strong> ${targetResult}`);
+    }
+    stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas máximas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
+    steps.value = [...stepList];
+
+    drawGraph(true);
+    showMessage(`✅ Dijkstra máximo completado. ${reached} nodos alcanzables`, "success");
+    isExecuting.value = false;
+    return;
+  }
+
+  const visited = Array(n).fill(false);
   stepList.push(`🎯 <strong>INICIO:</strong> Distancia a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
   steps.value = [...stepList];
 
@@ -809,6 +964,7 @@ const runDijkstra = async () => {
   }
 
   pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value, prev) : newPathEdges;
+  routePaths.value = buildRoutePathsFromPrevious(prev, n);
   
   const reached = dist.filter((d) => d !== Infinity && d !== 0).length;
   if (targetNode.value !== null) {
@@ -1096,6 +1252,7 @@ const exportData = () => {
     edges: edges.value,
     sourceNode: sourceNode.value,
     targetNode: targetNode.value,
+    optimizationType: optimizationType.value,
     exportDate: new Date().toISOString(),
   };
 
@@ -1121,6 +1278,9 @@ const importData = (event) => {
       if (data.nodes && data.edges) {
         nodes.value = data.nodes;
         edges.value = data.edges;
+        if (data.optimizationType === "min" || data.optimizationType === "max") {
+          optimizationType.value = data.optimizationType;
+        }
         syncNodeCount();
         if (data.sourceNode !== undefined && data.sourceNode < nodes.value.length) {
           sourceNode.value = data.sourceNode;

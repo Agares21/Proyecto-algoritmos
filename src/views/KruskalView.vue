@@ -312,11 +312,20 @@
                   </div>
                 </div>
               </div>
+              <div class="help-section">
+                <h3>🧭 Uso en esta pantalla:</h3>
+                <ul>
+                  <li>Elige <strong>Minimizar</strong> para obtener el árbol de expansión mínima.</li>
+                  <li>Elige <strong>Maximizar</strong> para obtener el árbol de expansión máxima.</li>
+                  <li>Usa las herramientas de nodo y arista para dibujar el grafo.</li>
+                  <li>Haz doble clic sobre una arista para cambiar su peso.</li>
+                </ul>
+              </div>
               <div class="help-note-box">
                 <strong>💡 Nota:</strong> 
                 {{ optimizationType === 'min' 
-                  ? 'El MST minimiza el peso total de las conexiones.' 
-                  : 'El árbol máximo maximiza el peso total de las conexiones (problema de red de máxima capacidad/beneficio).' }}
+                  ? 'El MST minimiza el peso total de las conexiones. El grafo debe ser conexo para formar un árbol completo.' 
+                  : 'El árbol máximo maximiza el peso total de las conexiones. El grafo debe ser conexo para formar un árbol completo.' }}
               </div>
             </div>
           </div>
