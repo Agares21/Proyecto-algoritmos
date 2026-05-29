@@ -1,10 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/Homeview.vue";
 import EditorView from "../views/Editorview.vue";
-import AlgoritmoView from "@/views/algoritmo.vue";
-import AcercaView from "@/views/acercaview.vue";
-import AyudaView from "@/views/AyudaView.vue";
-import TreeView from "@/views/TreeView.vue";
+import IntroduccionView from "../views/IntroduccionView.vue";
+import AcercaView from "../views/acercaview.vue";
+import AyudaView from "../views/AyudaView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,7 +10,12 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: HomeView,
+      component: IntroduccionView,
+    },
+    {
+      path: "/introduccion",
+      name: "introduccion",
+      component: IntroduccionView,
     },
     {
       path: "/editor",
@@ -20,24 +23,14 @@ const router = createRouter({
       component: EditorView,
     },
     {
-      path: "/algoritmo",
-      name: "algoritmo",
-      component: AlgoritmoView,
-    },
-    {
-      path: "/acerca",
-      name: "acerca",
-      component: AcercaView,
-    },
-    {
       path: "/ayuda",
       name: "ayuda",
       component: AyudaView,
     },
     {
-      path: "/arbol",
-      name: "arbol",
-      component: TreeView,
+      path: "/acerca",
+      name: "acerca",
+      component: AcercaView,
     },
   ],
 });

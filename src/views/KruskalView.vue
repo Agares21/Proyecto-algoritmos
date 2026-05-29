@@ -6,7 +6,7 @@
         <h1>Algoritmo de Kruskal</h1>
         <p>
           Árbol de {{ optimizationType === 'min' ? 'Mínima' : 'Máxima' }} Expansión - Encuentra la conexión más 
-          {{ optimizationType === 'min' ? 'económica' : 'beneficiosa' }} entre todos los nodos
+          {{ optimizationType === 'min' ? 'económica' : 'beneficiosa' }} entre todos los departamentos
         </p>
       </div>
       <div class="algorithm-badge" :class="optimizationType === 'min' ? 'badge-min' : 'badge-max'">
@@ -23,7 +23,7 @@
 
         <div class="config-group">
           <div class="dimension-item full-width">
-            <label>📊 Número de nodos</label>
+            <label>📊 Número de departamentos</label>
             <div class="number-control">
               <button @click="decrementNodes" class="num-btn">−</button>
               <span class="num-value">{{ nodeCount }}</span>
@@ -58,7 +58,7 @@
           </div>
 
           <div class="action-buttons">
-            <button @click="loadExample" class="btn-outline">📋 Ejemplo</button>
+            <button @click="loadBoliviaGraph" class="btn-outline">🇧🇴 Cargar Bolivia</button>
             <button @click="resetGraph" class="btn-outline danger">
               🗑️ Limpiar
             </button>
@@ -80,13 +80,13 @@
 
           <div class="info-panel">
             <div class="info-status">
-              <strong>🔵 Nodos:</strong> {{ nodes.length }}
+              <strong>🔵 Departamentos:</strong> {{ nodes.length }}
             </div>
             <div class="info-status">
-              <strong>🔗 Aristas:</strong> {{ edgesList.length }}
+              <strong>🔗 Rutas:</strong> {{ edgesList.length }}
             </div>
             <div class="info-status">
-              <strong>🎯 Objetivo:</strong> {{ optimizationType === 'min' ? 'Minimizar peso total' : 'Maximizar peso total' }}
+              <strong>🎯 Objetivo:</strong> {{ optimizationType === 'min' ? 'Minimizar recursos totales' : 'Maximizar recursos totales' }}
             </div>
           </div>
 
@@ -112,19 +112,19 @@
       <!-- Visualización del grafo -->
       <div class="graph-card">
         <div class="graph-header">
-          <h3>🌐 Visualización del Grafo</h3>
+          <h3>🌐 Mapa de Bolivia - Recursos</h3>
           <div class="graph-pills">
             <span class="pill pill-node">
               <span class="pill-dot node-dot"></span>
-              Nodos
+              Departamentos
             </span>
             <span class="pill pill-edge-mst">
               <span class="pill-dot mst-dot"></span>
-              Aristas del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}
+              Rutas del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}
             </span>
             <span class="pill pill-edge-normal">
               <span class="pill-dot normal-dot"></span>
-              Aristas no seleccionadas
+              Rutas no seleccionadas
             </span>
           </div>
         </div>
@@ -145,15 +145,15 @@
         <div class="legend">
           <div class="legend-item">
             <div class="legend-color mst-color"></div>
-            <span>{{ optimizationType === 'min' ? '🟢 Arista del MST' : '🟠 Arista del Árbol Máximo' }}</span>
+            <span>{{ optimizationType === 'min' ? '🟢 Ruta del MST' : '🟠 Ruta del Árbol Máximo' }}</span>
           </div>
           <div class="legend-item">
             <div class="legend-color normal-color"></div>
-            <span>⚪ Arista no seleccionada</span>
+            <span>⚪ Ruta no seleccionada</span>
           </div>
           <div class="legend-item">
             <div class="legend-color node-color"></div>
-            <span>🔵 Nodo</span>
+            <span>🔵 Gobernación</span>
           </div>
           <div class="legend-item">
             <div class="legend-color selected-color"></div>
@@ -186,8 +186,8 @@
                 </svg>
               </div>
               <div>
-                <h4>Peso Total del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}</h4>
-                <p>{{ optimizationType === 'min' ? 'Suma de aristas seleccionadas (mínima posible)' : 'Suma de aristas seleccionadas (máxima posible)' }}</p>
+                <h4>Recursos Totales del {{ optimizationType === 'min' ? 'MST' : 'Árbol Máximo' }}</h4>
+                <p>{{ optimizationType === 'min' ? 'Suma de rutas seleccionadas (mínima posible)' : 'Suma de rutas seleccionadas (máxima posible)' }}</p>
               </div>
             </div>
             <div class="total-value-card" :class="optimizationType === 'min' ? 'value-min' : 'value-max'">
@@ -208,7 +208,7 @@
                 </svg>
                 <h4>{{ optimizationType === 'min' ? '🌲 Árbol de Expansión Mínima' : '🌳 Árbol de Expansión Máxima' }}</h4>
               </div>
-              <span class="stat-badge">{{ selectedEdges.length }} aristas</span>
+              <span class="stat-badge">{{ selectedEdges.length }} rutas</span>
             </div>
 
             <div class="edges-list">
@@ -217,7 +217,7 @@
                   >{{ getNodeLabel(edge.from) }} →
                   {{ getNodeLabel(edge.to) }}</span
                 >
-                <span class="edge-weight">{{ edge.weight }}</span>
+                <span class="edge-weight">{{ edge.weight }} recursos</span>
               </div>
               <div v-if="selectedEdges.length === 0" class="empty-state">
                 Ejecuta el algoritmo para ver el resultado
@@ -347,14 +347,14 @@
 import { ref, onMounted, onUnmounted, nextTick } from "vue";
 
 // Estado
-const nodeCount = ref(6);
+const nodeCount = ref(9);
 const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showHelpModal = ref(false);
 const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
-const exportFileName = ref("kruskal");
+const exportFileName = ref("kruskal_bolivia");
 const edgeWeight = ref(1);
 const editorMode = ref("move");
 const edgeStartNode = ref(null);
@@ -377,7 +377,11 @@ let dragNode = null;
 let canvasWidth = 800;
 let canvasHeight = 550;
 
-const nodeLabels = ["A", "B", "C", "D", "E", "F", "G", "H"];
+// Departamentos de Bolivia
+const departamentos = [
+  "La Paz", "Santa Cruz", "Cochabamba", "Potosí", 
+  "Sucre", "Tarija", "Beni", "Pando", "Oruro"
+];
 
 // ============ FUNCIONES DEL GRAFO ============
 
@@ -420,12 +424,12 @@ const syncNodeCount = () => {
 
 const getDefaultNodeLabel = () => {
   const nextIndex = nodes.value.length;
-  return nodeLabels[nextIndex % nodeLabels.length] + (nextIndex >= nodeLabels.length ? Math.floor(nextIndex / nodeLabels.length) + 1 : "");
+  return departamentos[nextIndex % departamentos.length] + (nextIndex >= departamentos.length ? Math.floor(nextIndex / departamentos.length) + 1 : "");
 };
 
 const addNodeAt = (x, y) => {
   const id = nodes.value.length;
-  const label = prompt("Nombre del nodo:", getDefaultNodeLabel());
+  const label = prompt("Nombre del departamento:", getDefaultNodeLabel());
   if (label === null) return;
 
   nodes.value.push({
@@ -438,7 +442,7 @@ const addNodeAt = (x, y) => {
   syncNodeCount();
   resetResults();
   drawGraph();
-  showMessage("Nodo agregado", "success");
+  showMessage("Departamento agregado", "success");
 };
 
 const remapGraphAfterNodeDelete = (nodeId) => {
@@ -469,12 +473,12 @@ const remapGraphAfterNodeDelete = (nodeId) => {
 const deleteNodeById = (nodeId) => {
   remapGraphAfterNodeDelete(nodeId);
   drawGraph(true);
-  showMessage("Nodo eliminado", "neutral");
+  showMessage("Departamento eliminado", "neutral");
 };
 
 const addEdgeBetween = (from, to) => {
   if (from === to) {
-    showMessage("La arista necesita dos nodos distintos", "error");
+    showMessage("La arista necesita dos departamentos distintos", "error");
     return;
   }
 
@@ -483,16 +487,16 @@ const addEdgeBetween = (from, to) => {
   );
 
   if (exists) {
-    showMessage("Esa arista ya existe", "error");
+    showMessage("Esa ruta ya existe", "error");
     return;
   }
 
-  const value = prompt(`Peso de la arista ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
+  const value = prompt(`Recursos de la ruta ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
   if (value === null) return;
 
   const weight = Number(value);
   if (!Number.isFinite(weight) || weight <= 0) {
-    showMessage("El peso debe ser mayor a 0", "error");
+    showMessage("Los recursos deben ser mayor a 0", "error");
     return;
   }
 
@@ -502,21 +506,17 @@ const addEdgeBetween = (from, to) => {
   edgeWeight.value = weight;
   resetResults();
   drawGraph();
-  showMessage("Arista agregada", "success");
+  showMessage("Ruta agregada", "success");
 };
 
 const deleteEdgeById = (edgeId) => {
   edgesList.value = edgesList.value.filter((edge) => edge.id !== edgeId);
   resetResults();
   drawGraph(true);
-  showMessage("Arista eliminada", "neutral");
+  showMessage("Ruta eliminada", "neutral");
 };
 
-const generateRandomGraph = () => {
-  const n = nodeCount.value;
-  const newNodes = [];
-  const newEdges = [];
-
+const loadBoliviaGraph = () => {
   const canvas = canvasRef.value;
   if (canvas) {
     canvasWidth = canvas.clientWidth;
@@ -525,84 +525,46 @@ const generateRandomGraph = () => {
 
   const centerX = canvasWidth / 2;
   const centerY = canvasHeight / 2;
-  const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
+  const radius = Math.min(canvasWidth, canvasHeight) * 0.4;
 
-  for (let i = 0; i < n; i++) {
-    const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
-    const x = centerX + radius * Math.cos(angle);
-    const y = centerY + radius * Math.sin(angle);
-    newNodes.push({
-      id: i,
-      label:
-        nodeLabels[i % nodeLabels.length] +
-        (i >= nodeLabels.length ? Math.floor(i / nodeLabels.length) + 1 : ""),
-      x,
-      y,
-    });
-  }
-
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (Math.random() > 0.4) {
-        const weight = Math.floor(Math.random() * 20) + 1;
-        newEdges.push({
-          id: `${i}-${j}`,
-          from: i,
-          to: j,
-          weight: weight,
-        });
-      }
-    }
-  }
-
-  nodes.value = newNodes;
-  edgesList.value = newEdges;
-  selectedEdges.value = [];
-  totalWeight.value = 0;
-  steps.value = [];
-
-  nextTick(() => {
-    resizeCanvas();
-    drawGraph();
-  });
-
-  statusMessage.value = "✅ Grafo aleatorio generado";
-  statusTone.value = "success";
-  setTimeout(() => (statusMessage.value = ""), 2000);
-};
-
-const loadExample = () => {
-  nodeCount.value = 6;
-
-  const canvas = canvasRef.value;
-  if (canvas) {
-    canvasWidth = canvas.clientWidth;
-    canvasHeight = canvas.clientHeight;
-  }
-
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight / 2;
-  const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
-
-  nodes.value = [
-    { id: 0, label: "A", x: centerX + radius * Math.sin(0), y: centerY + radius * Math.cos(0) },
-    { id: 1, label: "B", x: centerX + radius * Math.sin((72 * Math.PI) / 180), y: centerY + radius * Math.cos((72 * Math.PI) / 180) },
-    { id: 2, label: "C", x: centerX + radius * Math.sin((144 * Math.PI) / 180), y: centerY + radius * Math.cos((144 * Math.PI) / 180) },
-    { id: 3, label: "D", x: centerX + radius * Math.sin((216 * Math.PI) / 180), y: centerY + radius * Math.cos((216 * Math.PI) / 180) },
-    { id: 4, label: "E", x: centerX + radius * Math.sin((288 * Math.PI) / 180), y: centerY + radius * Math.cos((288 * Math.PI) / 180) },
-    { id: 5, label: "F", x: centerX + radius * Math.sin((360 * Math.PI) / 180), y: centerY + radius * Math.cos((360 * Math.PI) / 180) },
+  // Posiciones de los departamentos
+  const positions = [
+    { x: centerX - radius * 0.6, y: centerY - radius * 0.5 }, // La Paz
+    { x: centerX + radius * 0.8, y: centerY + radius * 0.1 }, // Santa Cruz
+    { x: centerX, y: centerY - radius * 0.3 }, // Cochabamba
+    { x: centerX - radius * 0.2, y: centerY + radius * 0.5 }, // Potosí
+    { x: centerX - radius * 0.1, y: centerY + radius * 0.1 }, // Sucre
+    { x: centerX + radius * 0.2, y: centerY + radius * 0.7 }, // Tarija
+    { x: centerX - radius * 0.7, y: centerY - radius * 0.8 }, // Beni
+    { x: centerX - radius * 0.9, y: centerY - radius * 0.9 }, // Pando
+    { x: centerX - radius * 0.3, y: centerY + radius * 0.2 }, // Oruro
   ];
 
+  nodes.value = departamentos.map((nombre, i) => ({
+    id: i,
+    label: nombre,
+    x: positions[i].x,
+    y: positions[i].y,
+  }));
+
+  // Aristas con recursos (pesos simulados)
   edgesList.value = [
-    { id: "0-1", from: 0, to: 1, weight: 4 },
-    { id: "0-3", from: 0, to: 3, weight: 5 },
-    { id: "1-2", from: 1, to: 2, weight: 2 },
-    { id: "1-3", from: 1, to: 3, weight: 6 },
-    { id: "1-4", from: 1, to: 4, weight: 3 },
-    { id: "2-4", from: 2, to: 4, weight: 7 },
-    { id: "2-5", from: 2, to: 5, weight: 8 },
-    { id: "3-4", from: 3, to: 4, weight: 4 },
-    { id: "4-5", from: 4, to: 5, weight: 5 },
+    { id: "0-1", from: 0, to: 1, weight: 45 },
+    { id: "0-2", from: 0, to: 2, weight: 25 },
+    { id: "0-6", from: 0, to: 6, weight: 30 },
+    { id: "0-7", from: 0, to: 7, weight: 35 },
+    { id: "0-8", from: 0, to: 8, weight: 15 },
+    { id: "1-2", from: 1, to: 2, weight: 30 },
+    { id: "1-4", from: 1, to: 4, weight: 25 },
+    { id: "1-5", from: 1, to: 5, weight: 40 },
+    { id: "2-3", from: 2, to: 3, weight: 20 },
+    { id: "2-4", from: 2, to: 4, weight: 15 },
+    { id: "2-8", from: 2, to: 8, weight: 10 },
+    { id: "3-4", from: 3, to: 4, weight: 20 },
+    { id: "3-5", from: 3, to: 5, weight: 25 },
+    { id: "4-5", from: 4, to: 5, weight: 30 },
+    { id: "6-7", from: 6, to: 7, weight: 18 },
+    { id: "6-2", from: 6, to: 2, weight: 28 },
   ];
 
   selectedEdges.value = [];
@@ -614,7 +576,7 @@ const loadExample = () => {
     drawGraph();
   });
 
-  statusMessage.value = "✅ Ejemplo cargado";
+  statusMessage.value = "✅ Mapa de Bolivia cargado";
   statusTone.value = "success";
   setTimeout(() => (statusMessage.value = ""), 2000);
 };
@@ -687,9 +649,9 @@ const runKruskal = async () => {
 
   const objetivo = optimizationType.value === 'min' ? 'mínimo' : 'máximo';
   stepList.push(
-    `🎯 <strong>INICIO:</strong> ${nodes.value.length} nodos, cada uno en su propio conjunto. Objetivo: ${objetivo}`,
+    `🎯 <strong>INICIO:</strong> ${nodes.value.length} departamentos, cada uno en su propio conjunto. Objetivo: ${objetivo}`,
   );
-  stepList.push(`📋 <strong>ORDENAMIENTO:</strong> Aristas ordenadas por peso de ${optimizationType.value === 'min' ? 'menor a mayor' : 'mayor a menor'}`);
+  stepList.push(`📋 <strong>ORDENAMIENTO:</strong> Rutas ordenadas por recursos de ${optimizationType.value === 'min' ? 'menor a mayor' : 'mayor a menor'}`);
 
   let e = 0;
   let i = 0;
@@ -700,7 +662,7 @@ const runKruskal = async () => {
     const y = find(parent, nextEdge.to);
 
     stepList.push(
-      `📌 <strong>Evaluando:</strong> ${getNodeLabel(nextEdge.from)}-${getNodeLabel(nextEdge.to)} (peso: ${nextEdge.weight})`,
+      `📌 <strong>Evaluando:</strong> ${getNodeLabel(nextEdge.from)}-${getNodeLabel(nextEdge.to)} (recursos: ${nextEdge.weight})`,
     );
 
     if (x !== y) {
@@ -729,9 +691,9 @@ const runKruskal = async () => {
   } else {
     const tipo = optimizationType.value === 'min' ? 'mínimo' : 'máximo';
     stepList.push(
-      `✅ <strong>FINALIZADO!</strong> Árbol de expansión ${tipo} encontrado con peso total: ${totalWeight.value}`,
+      `✅ <strong>FINALIZADO!</strong> Árbol de expansión ${tipo} encontrado con recursos totales: ${totalWeight.value}`,
     );
-    statusMessage.value = `✅ Árbol ${tipo} encontrado con peso total: ${totalWeight.value}`;
+    statusMessage.value = `✅ Árbol ${tipo} encontrado con recursos totales: ${totalWeight.value}`;
     statusTone.value = "success";
   }
 
@@ -967,13 +929,13 @@ const handleDoubleClick = (e) => {
       const dy = midY - pos.y;
       if (Math.sqrt(dx * dx + dy * dy) < 25) {
         const newWeight = prompt(
-          `✏️ Editar peso de la arista ${getNodeLabel(edge.from)} → ${getNodeLabel(edge.to)}:`,
+          `✏️ Editar recursos de la ruta ${getNodeLabel(edge.from)} → ${getNodeLabel(edge.to)}:`,
           edge.weight,
         );
         if (newWeight && !isNaN(newWeight) && parseInt(newWeight) > 0) {
           edge.weight = parseInt(newWeight);
           drawGraph(true);
-          statusMessage.value = `✏️ Peso actualizado a ${newWeight}`;
+          statusMessage.value = `✏️ Recursos actualizados a ${newWeight}`;
           statusTone.value = "success";
           setTimeout(() => (statusMessage.value = ""), 1500);
         }
@@ -1033,7 +995,7 @@ const exportData = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  const fileName = exportFileName.value.trim() || "kruskal";
+  const fileName = exportFileName.value.trim() || "kruskal_bolivia";
   link.download = `${fileName}.json`;
   link.click();
   URL.revokeObjectURL(url);
@@ -1093,7 +1055,7 @@ const resizeCanvas = () => {
 
 // Inicializar
 onMounted(() => {
-  loadExample();
+  loadBoliviaGraph();
   window.addEventListener("resize", resizeCanvas);
   window.addEventListener("keydown", handleKeyDown);
   setTimeout(() => {
@@ -1289,57 +1251,6 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.graph-tools {
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-}
-
-.graph-tools h4 {
-  margin: 0 0 10px;
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.tool-btn {
-  padding: 9px 10px;
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #475569;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.tool-btn:hover,
-.tool-btn.active {
-  border-color: #667eea;
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.tool-btn.danger:hover,
-.tool-btn.danger.active {
-  border-color: #ef4444;
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.tool-status {
-  margin: 10px 0 0;
-  color: #64748b;
-  font-size: 0.75rem;
-  line-height: 1.35;
 }
 
 .btn-outline {
@@ -2019,4 +1930,3 @@ onUnmounted(() => {
   }
 }
 </style>
-

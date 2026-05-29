@@ -3,47 +3,44 @@
     <section class="hero">
       <div class="hero-copy">
         <span class="eyebrow">Centro de ayuda</span>
-        <h1>Guia de uso de la plataforma</h1>
+        <h1>Guía de uso de la plataforma</h1>
         <p>
-          Esta pagina web permite aprender, construir y analizar grafos de forma
-          visual. Aqui puedes revisar que hace cada modulo y como aprovechar las
-          herramientas disponibles.
+          Esta plataforma permite visualizar y optimizar la distribución de recursos
+          desde el Gobierno Central de Bolivia hacia las gobernaciones departamentales.
         </p>
       </div>
     </section>
 
     <section class="help-grid">
       <article class="help-card">
-        <h2>Inicio</h2>
+        <h2>Introducción</h2>
         <p>
-          Es la puerta principal de la plataforma. Presenta el proyecto y te da
-          acceso rapido para comenzar a experimentar con los algoritmos.
+          La página de inicio presenta el contexto del problema: distribución de recursos
+          desde La Paz (Gobierno Central) a los 9 departamentos de Bolivia.
         </p>
       </article>
 
       <article class="help-card">
-        <h2>Algoritmo</h2>
+        <h2>Editor de Grafos</h2>
         <p>
-          Reune los modulos de trabajo para resolver problemas con grafos. Desde
-          aqui puedes entrar a las vistas donde se calculan recorridos,
-          asignaciones y otros analisis visuales.
+          Permite dibujar nodos (departamentos) y aristas (rutas) con sus respectivos
+          costos o recursos. Puedes mover nodos, agregar nuevos y editar pesos.
         </p>
       </article>
 
       <article class="help-card">
-        <h2>Crea tu Grafo</h2>
+        <h2>Algoritmo de Dijkstra</h2>
         <p>
-          Es el editor interactivo. Permite dibujar nodos y aristas, moverlos,
-          borrar elementos y construir el grafo base que luego usan los demas
-          modulos.
+          Encuentra la ruta más económica desde el Gobierno Central (La Paz) hasta
+          cualquier gobernación, minimizando el costo total de transporte.
         </p>
       </article>
 
       <article class="help-card">
-        <h2>Acerca de</h2>
+        <h2>Algoritmo de Kruskal</h2>
         <p>
-          Muestra informacion general del proyecto, la materia y el equipo de
-          trabajo que desarrollo la aplicacion.
+          Construye la red de distribución más eficiente que conecte todas las
+          gobernaciones con el mínimo costo total de infraestructura.
         </p>
       </article>
     </section>
@@ -52,123 +49,77 @@
       <div class="section-heading">
         <h2>Herramientas principales</h2>
         <p>
-          Estas son las acciones que mas se usan dentro del editor de grafos y
-          los modulos conectados a el.
+          Estas son las acciones que más se usan dentro del editor de grafos:
         </p>
       </div>
 
       <div class="feature-list">
         <article class="feature-item">
           <h3>Mover</h3>
-          <p>Sirve para reposicionar nodos y acomodar el grafo en pantalla.</p>
+          <p>Reubica los departamentos en el mapa para una mejor visualización.</p>
         </article>
 
         <article class="feature-item">
           <h3>Nodo</h3>
-          <p>
-            Crea nuevos nodos. Al insertarlos, la aplicacion puede solicitar un
-            nombre para identificarlos mejor.
-          </p>
+          <p>Crea nuevos departamentos o puntos de distribución.</p>
         </article>
 
         <article class="feature-item">
           <h3>Arista</h3>
-          <p>
-            Conecta nodos y asigna pesos para representar costos, distancias o
-            relaciones entre ellos.
-          </p>
+          <p>Conecta departamentos y asigna un costo o recurso a cada ruta.</p>
         </article>
 
         <article class="feature-item">
           <h3>Borrar</h3>
-          <p>Elimina nodos o aristas que ya no forman parte del grafo.</p>
+          <p>Elimina departamentos o rutas que ya no son necesarios.</p>
         </article>
 
         <article class="feature-item">
           <h3>Exportar e importar</h3>
-          <p>
-            Permiten guardar el trabajo en un archivo y volver a cargarlo mas
-            tarde para seguir editando.
-          </p>
-        </article>
-
-        <article class="feature-item">
-          <h3>Limpiar grafo</h3>
-          <p>
-            Reinicia por completo el dibujo actual para comenzar otro ejemplo
-            desde cero.
-          </p>
+          <p>Guarda tu trabajo en un archivo JSON y vuelve a cargarlo después.</p>
         </article>
       </div>
     </section>
 
     <section class="detail-section">
       <div class="section-heading">
-        <h2>Que puedes hacer en la web</h2>
-        <p>
-          La aplicacion esta pensada para practicar de forma visual y entender
-          mejor los resultados de cada algoritmo.
-        </p>
+        <h2>Flujo de trabajo</h2>
+        <p>Pasos recomendados para utilizar la plataforma:</p>
       </div>
 
       <div class="workflow">
         <article class="workflow-step">
           <span class="step-number">1</span>
           <div>
-            <h3>Construir el grafo</h3>
-            <p>
-              Dibuja nodos y conexiones en el editor para representar tu problema.
-            </p>
+            <h3>Conocer el contexto</h3>
+            <p>Lee la introducción para entender el problema de distribución.</p>
           </div>
         </article>
 
         <article class="workflow-step">
           <span class="step-number">2</span>
           <div>
-            <h3>Asignar pesos</h3>
-            <p>
-              Define los valores en las aristas para modelar costos, tiempos o
-              distancias.
-            </p>
+            <h3>Dibujar el grafo</h3>
+            <p>En el editor, coloca los departamentos y las rutas con sus costos.</p>
           </div>
         </article>
 
         <article class="workflow-step">
           <span class="step-number">3</span>
           <div>
-            <h3>Aplicar el modulo correspondiente</h3>
-            <p>
-              Usa la vista de algoritmo o asignacion segun el tipo de analisis que
-              necesites realizar.
-            </p>
+            <h3>Ejecutar Dijkstra</h3>
+            <p>Encuentra la ruta más económica desde La Paz a cualquier destino.</p>
           </div>
         </article>
 
         <article class="workflow-step">
           <span class="step-number">4</span>
           <div>
-            <h3>Interpretar el resultado</h3>
-            <p>
-              Observa la ruta, la matriz o la solucion destacada directamente sobre
-              el grafo y valida tu ejercicio.
-            </p>
+            <h3>Ejecutar Kruskal</h3>
+            <p>Construye la red de distribución óptima para todo el país.</p>
           </div>
         </article>
       </div>
-    </section>
-
-    <section class="detail-section faq">
-      <div class="section-heading">
-        <h2>Recomendaciones de uso</h2>
-      </div>
-
-      <ul class="tips-list">
-        <li>Nombra los nodos de forma clara para identificar mejor cada proceso.</li>
-        <li>Verifica la direccion de las aristas antes de ejecutar un algoritmo.</li>
-        <li>Usa exportar para guardar ejemplos o ejercicios ya terminados.</li>
-        <li>Si una matriz no se genera, revisa que el grafo tenga la estructura esperada.</li>
-        <li>Organiza visualmente el grafo para que los resultados se lean con facilidad.</li>
-      </ul>
     </section>
   </div>
 </template>
@@ -177,9 +128,7 @@
 .help-page {
   min-height: 100vh;
   padding: 3rem 1.5rem 4rem;
-  background:
-    radial-gradient(circle at top, rgba(102, 126, 234, 0.12), transparent 35%),
-    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
   color: #1e293b;
 }
 
@@ -231,8 +180,7 @@
 
 .help-card,
 .feature-item,
-.workflow-step,
-.faq {
+.workflow-step {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 20px;
@@ -243,18 +191,11 @@
   padding: 1.4rem;
 }
 
-.help-card h2,
-.section-heading h2,
-.feature-item h3,
-.workflow-step h3 {
+.help-card h2 {
   margin-top: 0;
 }
 
-.help-card p,
-.feature-item p,
-.workflow-step p,
-.section-heading p,
-.tips-list li {
+.help-card p {
   color: #475569;
   line-height: 1.65;
 }
@@ -302,17 +243,13 @@
   font-weight: 700;
 }
 
-.faq {
-  padding: 1.5rem;
+.workflow-step h3 {
+  margin-top: 0;
 }
 
-.tips-list {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.tips-list li + li {
-  margin-top: 0.75rem;
+.workflow-step p {
+  color: #475569;
+  line-height: 1.65;
 }
 
 @media (max-width: 768px) {

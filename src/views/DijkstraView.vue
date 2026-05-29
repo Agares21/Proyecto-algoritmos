@@ -24,7 +24,7 @@
         <div class="config-group">
           <!-- Número de nodos -->
           <div class="dimension-item full-width">
-            <label>📊 Número de nodos</label>
+            <label>📊 Número de departamentos</label>
             <div class="number-control">
               <button @click="decrementNodes" class="num-btn">−</button>
               <span class="num-value">{{ nodeCount }}</span>
@@ -60,7 +60,7 @@
           </div>
 
           <div class="action-buttons">
-            <button @click="loadExample" class="btn-outline">📋 Ejemplo</button>
+            <button @click="loadBoliviaGraph" class="btn-outline">🇧🇴 Cargar Bolivia</button>
             <button @click="clearGraph" class="btn-outline danger">
               🗑️ Limpiar
             </button>
@@ -82,10 +82,10 @@
 
           <div class="info-panel">
             <div class="info-status">
-              <strong>🔵 Nodos:</strong> {{ nodes.length }}
+              <strong>🔵 Departamentos:</strong> {{ nodes.length }}
             </div>
             <div class="info-status">
-              <strong>🔗 Aristas:</strong> {{ edges.length }}
+              <strong>🔗 Recursos (Aristas):</strong> {{ edgesList.length }}
             </div>
             <div class="info-status">
               <strong>📍 Origen:</strong>
@@ -102,7 +102,7 @@
           </div>
 
           <div class="origen-selector">
-            <label>🎯 Seleccionar nodo origen:</label>
+            <label>🎯 Seleccionar departamento origen:</label>
             <div class="origen-buttons">
               <button
                 v-for="node in nodes"
@@ -117,7 +117,7 @@
           </div>
 
           <div class="origen-selector">
-            <label>Seleccionar nodo destino:</label>
+            <label>Seleccionar departamento destino:</label>
             <div class="origen-buttons">
               <button
                 v-for="node in nodes"
@@ -154,19 +154,19 @@
       <!-- Visualización del grafo -->
       <div class="graph-card">
         <div class="graph-header">
-          <h3>🌐 Visualización del Grafo</h3>
+          <h3>🌐 Mapa de Bolivia - Recursos</h3>
           <div class="graph-pills">
             <span class="pill pill-node">
               <span class="pill-dot node-dot"></span>
-              Nodos
+              Departamentos
             </span>
             <span class="pill pill-edge-path">
               <span class="pill-dot path-dot"></span>
-              {{ optimizationType === 'min' ? 'Camino más corto' : 'Camino máximo' }}
+              {{ optimizationType === 'min' ? 'Ruta más económica' : 'Ruta de mayor recurso' }}
             </span>
             <span class="pill pill-edge-normal">
               <span class="pill-dot normal-dot"></span>
-              Otras aristas
+              Otras rutas
             </span>
           </div>
         </div>
@@ -187,19 +187,19 @@
         <div class="legend">
           <div class="legend-item">
             <div class="legend-color source-color"></div>
-            <span>🔴 Nodo Origen</span>
+            <span>🔴 Gobierno Central</span>
           </div>
           <div class="legend-item">
             <div class="legend-color path-color"></div>
-            <span>🟢 Arista del camino</span>
+            <span>🟢 Ruta de recursos</span>
           </div>
           <div class="legend-item">
             <div class="legend-color normal-color"></div>
-            <span>⚪ Arista no seleccionada</span>
+            <span>⚪ Ruta no seleccionada</span>
           </div>
           <div class="legend-item">
             <div class="legend-color node-color"></div>
-            <span>🔵 Nodo</span>
+            <span>🔵 Gobernación</span>
           </div>
         </div>
       </div>
@@ -221,8 +221,8 @@
                 </svg>
               </div>
               <div>
-                <h4>{{ optimizationType === 'min' ? 'Distancias mínimas' : 'Pesos máximos' }} desde {{ getNodeLabel(sourceNode) }}</h4>
-                <p>{{ optimizationType === 'min' ? 'Camino más corto a cada nodo' : 'Camino simple de mayor peso a cada nodo' }}</p>
+                <h4>{{ optimizationType === 'min' ? 'Recursos mínimos' : 'Recursos máximos' }} desde {{ getNodeLabel(sourceNode) }}</h4>
+                <p>{{ optimizationType === 'min' ? 'Camino más corto a cada departamento' : 'Camino de mayor recurso a cada departamento' }}</p>
               </div>
             </div>
             
@@ -243,11 +243,11 @@
                 <svg viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 2a6 6 0 016 6c0 4.5-6 10-6 10S4 12.5 4 8a6 6 0 016-6zm0 8a2 2 0 100-4 2 2 0 000 4z"/>
                 </svg>
-                <h4>Ruta al destino {{ getNodeLabel(targetNode) }}</h4>
+                <h4>Ruta al departamento {{ getNodeLabel(targetNode) }}</h4>
               </div>
             </div>
             <div class="target-route-card">
-              <span class="target-route-label">{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</span>
+              <span class="target-route-label">{{ optimizationType === 'min' ? 'Recursos' : 'Recursos' }}</span>
               <strong>{{ getTargetDistance() === Infinity ? "No alcanzable" : getTargetDistance() }}</strong>
               <span class="target-route-path">{{ getPathString(targetNode) }}</span>
             </div>
@@ -268,7 +268,7 @@
                 <thead>
                   <tr>
                     <th>Destino</th>
-                    <th>{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</th>
+                    <th>{{ optimizationType === 'min' ? 'Recursos' : 'Recursos' }}</th>
                     <th>Ruta</th>
                   </tr>
                 </thead>
@@ -366,16 +366,16 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 
 // Estado
-const nodeCount = ref(6);
+const nodeCount = ref(9);
 const sourceNode = ref(0);
-const targetNode = ref(null);
+const targetNode = ref(3);
 const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showHelpModal = ref(false);
 const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
-const exportFileName = ref("dijkstra");
+const exportFileName = ref("dijkstra_bolivia");
 const edgeWeight = ref(1);
 const editorMode = ref("move");
 const edgeStartNode = ref(null);
@@ -383,7 +383,7 @@ const editorStatus = ref("Modo mover: arrastra nodos o selecciona el origen.");
 
 // Datos del grafo
 const nodes = ref([]);
-const edges = ref([]);
+const edgesList = ref([]);
 const distances = ref([]);
 const previous = ref([]);
 const routePaths = ref([]);
@@ -400,7 +400,11 @@ let dragNode = null;
 let canvasWidth = 800;
 let canvasHeight = 550;
 
-const nodeLabels = ["A", "B", "C", "D", "E", "F", "G", "H"];
+// Departamentos de Bolivia
+const departamentos = [
+  "La Paz", "Santa Cruz", "Cochabamba", "Potosí", 
+  "Sucre", "Tarija", "Beni", "Pando", "Oruro"
+];
 
 // ============ FUNCIONES DEL GRAFO ============
 
@@ -549,7 +553,7 @@ watch(optimizationType, () => {
 
 const getDefaultNodeLabel = () => {
   const nextIndex = nodes.value.length;
-  return nodeLabels[nextIndex % nodeLabels.length] + (nextIndex >= nodeLabels.length ? Math.floor(nextIndex / nodeLabels.length) + 1 : "");
+  return departamentos[nextIndex % departamentos.length] + (nextIndex >= departamentos.length ? Math.floor(nextIndex / departamentos.length) + 1 : "");
 };
 
 const syncNodeCount = () => {
@@ -558,7 +562,7 @@ const syncNodeCount = () => {
 
 const addNodeAt = (x, y) => {
   const id = nodes.value.length;
-  const label = prompt("Nombre del nodo:", getDefaultNodeLabel());
+  const label = prompt("Nombre del departamento:", getDefaultNodeLabel());
   if (label === null) return;
 
   nodes.value.push({
@@ -572,7 +576,7 @@ const addNodeAt = (x, y) => {
   syncNodeCount();
   resetResults();
   drawGraph();
-  showMessage("Nodo agregado", "success");
+  showMessage("Departamento agregado", "success");
 };
 
 const remapGraphAfterNodeDelete = (nodeId) => {
@@ -585,7 +589,7 @@ const remapGraphAfterNodeDelete = (nodeId) => {
   });
 
   nodes.value = remainingNodes;
-  edges.value = edges.value
+  edgesList.value = edgesList.value
     .filter((edge) => edge.from !== nodeId && edge.to !== nodeId)
     .map((edge) => ({
       ...edge,
@@ -617,47 +621,47 @@ const remapGraphAfterNodeDelete = (nodeId) => {
 const deleteNodeById = (nodeId) => {
   remapGraphAfterNodeDelete(nodeId);
   drawGraph(true);
-  showMessage("Nodo eliminado", "neutral");
+  showMessage("Departamento eliminado", "neutral");
 };
 
 const addEdgeBetween = (from, to) => {
   if (from === to) {
-    showMessage("La arista necesita dos nodos distintos", "error");
+    showMessage("La arista necesita dos departamentos distintos", "error");
     return;
   }
 
-  const exists = edges.value.some((edge) =>
+  const exists = edgesList.value.some((edge) =>
     (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from)
   );
 
   if (exists) {
-    showMessage("Esa arista ya existe", "error");
+    showMessage("Esa ruta ya existe", "error");
     return;
   }
 
-  const value = prompt(`Peso de la arista ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
+  const value = prompt(`Recursos de la ruta ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
   if (value === null) return;
 
   const weight = Number(value);
   if (!Number.isFinite(weight) || weight <= 0) {
-    showMessage("El peso debe ser mayor a 0", "error");
+    showMessage("Los recursos deben ser mayor a 0", "error");
     return;
   }
 
   const a = Math.min(from, to);
   const b = Math.max(from, to);
-  edges.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
+  edgesList.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
   edgeWeight.value = weight;
   resetResults();
   drawGraph();
-  showMessage("Arista agregada", "success");
+  showMessage("Ruta agregada", "success");
 };
 
 const deleteEdgeById = (edgeId) => {
-  edges.value = edges.value.filter((edge) => edge.id !== edgeId);
+  edgesList.value = edgesList.value.filter((edge) => edge.id !== edgeId);
   resetResults();
   drawGraph(true);
-  showMessage("Arista eliminada", "neutral");
+  showMessage("Ruta eliminada", "neutral");
 };
 
 // Seleccionar origen
@@ -683,11 +687,7 @@ const selectTargetNode = (id) => {
   showMessage(`Destino cambiado a ${getNodeLabel(id)}`, "success");
 };
 
-const generateRandomGraph = () => {
-  const n = nodeCount.value;
-  const newNodes = [];
-  const newEdges = [];
-
+const loadBoliviaGraph = () => {
   const canvas = canvasRef.value;
   if (canvas) {
     canvasWidth = canvas.clientWidth;
@@ -696,80 +696,50 @@ const generateRandomGraph = () => {
 
   const centerX = canvasWidth / 2;
   const centerY = canvasHeight / 2;
-  const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
+  const radius = Math.min(canvasWidth, canvasHeight) * 0.4;
 
-  for (let i = 0; i < n; i++) {
-    const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
-    const x = centerX + radius * Math.cos(angle);
-    const y = centerY + radius * Math.sin(angle);
-    newNodes.push({
-      id: i,
-      label: nodeLabels[i % nodeLabels.length] + (i >= nodeLabels.length ? Math.floor(i / nodeLabels.length) + 1 : ""),
-      x, y
-    });
-  }
-
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (Math.random() > 0.4) {
-        newEdges.push({
-          id: `${i}-${j}`,
-          from: i,
-          to: j,
-          weight: Math.floor(Math.random() * 15) + 1,
-        });
-      }
-    }
-  }
-
-  nodes.value = newNodes;
-  edges.value = newEdges;
-  resetResults();
-
-  nextTick(() => {
-    resizeCanvas();
-    drawGraph();
-  });
-
-  showMessage("✅ Grafo aleatorio generado", "success");
-};
-
-const loadExample = () => {
-  nodeCount.value = 6;
-
-  const canvas = canvasRef.value;
-  if (canvas) {
-    canvasWidth = canvas.clientWidth;
-    canvasHeight = canvas.clientHeight;
-  }
-
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight / 2;
-  const radius = Math.min(canvasWidth, canvasHeight) * 0.35;
-
-  nodes.value = [
-    { id: 0, label: "A", x: centerX, y: centerY - radius },
-    { id: 1, label: "B", x: centerX + radius * 0.866, y: centerY - radius * 0.5 },
-    { id: 2, label: "C", x: centerX + radius * 0.866, y: centerY + radius * 0.5 },
-    { id: 3, label: "D", x: centerX, y: centerY + radius },
-    { id: 4, label: "E", x: centerX - radius * 0.866, y: centerY + radius * 0.5 },
-    { id: 5, label: "F", x: centerX - radius * 0.866, y: centerY - radius * 0.5 },
+  // Posiciones de los departamentos
+  const positions = [
+    { x: centerX - radius * 0.6, y: centerY - radius * 0.5 }, // La Paz
+    { x: centerX + radius * 0.8, y: centerY + radius * 0.1 }, // Santa Cruz
+    { x: centerX, y: centerY - radius * 0.3 }, // Cochabamba
+    { x: centerX - radius * 0.2, y: centerY + radius * 0.5 }, // Potosí
+    { x: centerX - radius * 0.1, y: centerY + radius * 0.1 }, // Sucre
+    { x: centerX + radius * 0.2, y: centerY + radius * 0.7 }, // Tarija
+    { x: centerX - radius * 0.7, y: centerY - radius * 0.8 }, // Beni
+    { x: centerX - radius * 0.9, y: centerY - radius * 0.9 }, // Pando
+    { x: centerX - radius * 0.3, y: centerY + radius * 0.2 }, // Oruro
   ];
 
-  edges.value = [
-    { id: "0-1", from: 0, to: 1, weight: 4 },
-    { id: "0-5", from: 0, to: 5, weight: 5 },
-    { id: "1-2", from: 1, to: 2, weight: 2 },
-    { id: "1-5", from: 1, to: 5, weight: 6 },
-    { id: "1-4", from: 1, to: 4, weight: 3 },
-    { id: "2-3", from: 2, to: 3, weight: 7 },
-    { id: "2-4", from: 2, to: 4, weight: 8 },
-    { id: "3-4", from: 3, to: 4, weight: 4 },
-    { id: "4-5", from: 4, to: 5, weight: 5 },
+  nodes.value = departamentos.map((nombre, i) => ({
+    id: i,
+    label: nombre,
+    x: positions[i].x,
+    y: positions[i].y,
+  }));
+
+  // Aristas con recursos (pesos simulados)
+  edgesList.value = [
+    { id: "0-1", from: 0, to: 1, weight: 45 },
+    { id: "0-2", from: 0, to: 2, weight: 25 },
+    { id: "0-6", from: 0, to: 6, weight: 30 },
+    { id: "0-7", from: 0, to: 7, weight: 35 },
+    { id: "0-8", from: 0, to: 8, weight: 15 },
+    { id: "1-2", from: 1, to: 2, weight: 30 },
+    { id: "1-4", from: 1, to: 4, weight: 25 },
+    { id: "1-5", from: 1, to: 5, weight: 40 },
+    { id: "2-3", from: 2, to: 3, weight: 20 },
+    { id: "2-4", from: 2, to: 4, weight: 15 },
+    { id: "2-8", from: 2, to: 8, weight: 10 },
+    { id: "3-4", from: 3, to: 4, weight: 20 },
+    { id: "3-5", from: 3, to: 5, weight: 25 },
+    { id: "4-5", from: 4, to: 5, weight: 30 },
+    { id: "6-7", from: 6, to: 7, weight: 18 },
+    { id: "6-2", from: 6, to: 2, weight: 28 },
   ];
 
-  sourceNode.value = 0;
-  targetNode.value = 3;
+  sourceNode.value = 0; // La Paz como gobierno central
+  targetNode.value = 3; // Potosí como ejemplo
   syncNodeCount();
   resetResults();
 
@@ -778,12 +748,17 @@ const loadExample = () => {
     drawGraph();
   });
 
-  showMessage("✅ Ejemplo cargado", "success");
+  showMessage("✅ Mapa de Bolivia cargado", "success");
+};
+
+const generateRandomGraph = () => {
+  // No implementamos esto para mantener el contexto de Bolivia
+  loadBoliviaGraph();
 };
 
 const clearGraph = () => {
   nodes.value = [];
-  edges.value = [];
+  edgesList.value = [];
   sourceNode.value = null;
   targetNode.value = null;
   selectedNode.value = null;
@@ -822,7 +797,7 @@ const runDijkstra = async () => {
 
   const edgesMap = new Map();
   const adjacency = Array.from({ length: n }, () => []);
-  edges.value.forEach((edge) => {
+  edgesList.value.forEach((edge) => {
     edgesMap.set(`${edge.from}-${edge.to}`, edge.weight);
     edgesMap.set(`${edge.to}-${edge.from}`, edge.weight);
     adjacency[edge.from]?.push({ to: edge.to, weight: edge.weight });
@@ -838,7 +813,7 @@ const runDijkstra = async () => {
   if (!isMinimizing) {
     const bestPaths = Array(n).fill(null);
     bestPaths[sourceNode.value] = [sourceNode.value];
-    stepList.push(`🎯 <strong>INICIO:</strong> Peso acumulado en <strong>${getNodeLabel(sourceNode.value)}</strong> = 0. Se buscarán caminos simples máximos.`);
+    stepList.push(`🎯 <strong>INICIO:</strong> Recursos acumulados en <strong>${getNodeLabel(sourceNode.value)}</strong> = 0. Se buscarán rutas máximas.`);
     steps.value = [...stepList];
 
     const visited = Array(n).fill(false);
@@ -884,20 +859,20 @@ const runDijkstra = async () => {
       const targetDistance = distances.value[targetNode.value];
       const targetResult = targetDistance === Infinity
         ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
-        : `Ruta máxima a ${getNodeLabel(targetNode.value)} con peso ${targetDistance}: ${getPathString(targetNode.value)}`;
+        : `Ruta máxima a ${getNodeLabel(targetNode.value)} con recursos ${targetDistance}: ${getPathString(targetNode.value)}`;
       stepList.push(`✅ <strong>DESTINO:</strong> ${targetResult}`);
     }
-    stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas máximas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
+    stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas máximas a ${reached} departamentos desde ${getNodeLabel(sourceNode.value)}`);
     steps.value = [...stepList];
 
     drawGraph(true);
-    showMessage(`✅ Dijkstra máximo completado. ${reached} nodos alcanzables`, "success");
+    showMessage(`✅ Dijkstra máximo completado. ${reached} departamentos alcanzables`, "success");
     isExecuting.value = false;
     return;
   }
 
   const visited = Array(n).fill(false);
-  stepList.push(`🎯 <strong>INICIO:</strong> Distancia a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
+  stepList.push(`🎯 <strong>INICIO:</strong> Recursos a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
   steps.value = [...stepList];
 
   for (let count = 0; count < n; count++) {
@@ -915,7 +890,7 @@ const runDijkstra = async () => {
     visited[u] = true;
     
     if (u !== sourceNode.value) {
-      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Seleccionamos <strong>${getNodeLabel(u)}</strong> (distancia = ${dist[u]})`);
+      stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Seleccionamos <strong>${getNodeLabel(u)}</strong> (recursos = ${dist[u]})`);
     } else {
       stepList.push(`📍 <strong>Paso ${count + 1}:</strong> Comenzamos desde el origen <strong>${getNodeLabel(u)}</strong>`);
     }
@@ -936,7 +911,7 @@ const runDijkstra = async () => {
     }
     
     if (updatedCount === 0 && u !== sourceNode.value) {
-      stepList.push(`  ℹ️ No se actualizaron distancias desde ${getNodeLabel(u)}`);
+      stepList.push(`  ℹ️ No se actualizaron recursos desde ${getNodeLabel(u)}`);
     }
 
     distances.value = [...dist];
@@ -946,7 +921,6 @@ const runDijkstra = async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
-  // Reconstruir caminos
   const newPathEdges = [];
   for (let i = 0; i < n; i++) {
     if (i !== sourceNode.value && prev[i] !== -1) {
@@ -971,14 +945,14 @@ const runDijkstra = async () => {
     const targetDistance = dist[targetNode.value];
     const targetResult = targetDistance === Infinity
       ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
-      : `Ruta a ${getNodeLabel(targetNode.value)} con distancia ${targetDistance}: ${getPathString(targetNode.value)}`;
-    stepList.push(`âœ… <strong>DESTINO:</strong> ${targetResult}`);
+      : `Ruta a ${getNodeLabel(targetNode.value)} con recursos ${targetDistance}: ${getPathString(targetNode.value)}`;
+    stepList.push(`✅ <strong>DESTINO:</strong> ${targetResult}`);
   }
-  stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
+  stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reached} departamentos desde ${getNodeLabel(sourceNode.value)}`);
   steps.value = [...stepList];
   
   drawGraph(true);
-  showMessage(`✅ Dijkstra completado. ${reached} nodos alcanzables`, "success");
+  showMessage(`✅ Dijkstra completado. ${reached} departamentos alcanzables`, "success");
   isExecuting.value = false;
 };
 
@@ -1014,7 +988,7 @@ const drawGraph = (highlightPaths = false) => {
   }
 
   // Dibujar aristas
-  edges.value.forEach((edge) => {
+  edgesList.value.forEach((edge) => {
     const fromNode = nodes.value.find((n) => n.id === edge.from);
     const toNode = nodes.value.find((n) => n.id === edge.to);
 
@@ -1041,7 +1015,7 @@ const drawGraph = (highlightPaths = false) => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Peso
+    // Peso (recursos)
     const midX = (fromNode.x + toNode.x) / 2;
     const midY = (fromNode.y + toNode.y) / 2;
     const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
@@ -1112,7 +1086,7 @@ const findNodeAt = (x, y) => {
 };
 
 const findEdgeAt = (x, y) => {
-  for (const edge of edges.value) {
+  for (const edge of edgesList.value) {
     const fromNode = nodes.value.find((n) => n.id === edge.from);
     const toNode = nodes.value.find((n) => n.id === edge.to);
     if (!fromNode || !toNode) continue;
@@ -1192,7 +1166,7 @@ const handleMouseUp = () => {
 const handleDoubleClick = (e) => {
   const pos = getMousePos(e);
 
-  for (const edge of edges.value) {
+  for (const edge of edgesList.value) {
     const fromNode = nodes.value.find((n) => n.id === edge.from);
     const toNode = nodes.value.find((n) => n.id === edge.to);
     if (fromNode && toNode) {
@@ -1202,13 +1176,13 @@ const handleDoubleClick = (e) => {
       const dy = midY - pos.y;
       if (Math.sqrt(dx * dx + dy * dy) < 25) {
         const newWeight = prompt(
-          `✏️ Editar peso de la arista ${getNodeLabel(edge.from)} → ${getNodeLabel(edge.to)}:`,
+          `✏️ Editar recursos de la ruta ${getNodeLabel(edge.from)} → ${getNodeLabel(edge.to)}:`,
           edge.weight,
         );
         if (newWeight && !isNaN(newWeight) && parseInt(newWeight) > 0) {
           edge.weight = parseInt(newWeight);
           drawGraph(true);
-          showMessage(`✏️ Peso actualizado a ${newWeight}`, "success");
+          showMessage(`✏️ Recursos actualizados a ${newWeight}`, "success");
         }
         break;
       }
@@ -1249,7 +1223,7 @@ const exportData = () => {
 
   const payload = {
     nodes: nodes.value,
-    edges: edges.value,
+    edges: edgesList.value,
     sourceNode: sourceNode.value,
     targetNode: targetNode.value,
     optimizationType: optimizationType.value,
@@ -1260,7 +1234,7 @@ const exportData = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  const fileName = exportFileName.value.trim() || "dijkstra";
+  const fileName = exportFileName.value.trim() || "dijkstra_bolivia";
   link.download = `${fileName}.json`;
   link.click();
   URL.revokeObjectURL(url);
@@ -1277,7 +1251,7 @@ const importData = (event) => {
       const data = JSON.parse(e.target.result);
       if (data.nodes && data.edges) {
         nodes.value = data.nodes;
-        edges.value = data.edges;
+        edgesList.value = data.edges;
         if (data.optimizationType === "min" || data.optimizationType === "max") {
           optimizationType.value = data.optimizationType;
         }
@@ -1326,7 +1300,7 @@ const resizeCanvas = () => {
 
 // Inicializar
 onMounted(() => {
-  loadExample();
+  loadBoliviaGraph();
   window.addEventListener("resize", resizeCanvas);
   window.addEventListener("keydown", handleKeyDown);
   setTimeout(() => {
@@ -1511,57 +1485,6 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.graph-tools {
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-}
-
-.graph-tools h4 {
-  margin: 0 0 10px;
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.tool-btn {
-  padding: 9px 10px;
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #475569;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.tool-btn:hover,
-.tool-btn.active {
-  border-color: #667eea;
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.tool-btn.danger:hover,
-.tool-btn.danger.active {
-  border-color: #ef4444;
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.tool-status {
-  margin: 10px 0 0;
-  color: #64748b;
-  font-size: 0.75rem;
-  line-height: 1.35;
 }
 
 .btn-outline {
@@ -1954,6 +1877,12 @@ onUnmounted(() => {
   color: #333;
 }
 
+.card-header p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #666;
+}
+
 .distances-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -2314,5 +2243,3 @@ onUnmounted(() => {
   }
 }
 </style>
-
-
