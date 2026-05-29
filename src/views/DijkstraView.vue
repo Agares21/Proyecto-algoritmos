@@ -3,10 +3,14 @@
     <div class="hero-section">
       <div class="hero-content">
         <h1>Algoritmo de Dijkstra</h1>
-        <p>Camino más corto desde un nodo origen a todos los demás nodos</p>
+        <p>
+          {{ optimizationType === 'min'
+            ? 'Camino más corto desde un nodo origen a todos los demás nodos'
+            : 'Camino simple de mayor peso desde un nodo origen a todos los demás nodos' }}
+        </p>
       </div>
       <div class="algorithm-badge">
-        🛣️ Camino Más Corto
+        {{ optimizationType === 'min' ? '🛣️ Camino Más Corto' : '🛣️ Camino Máximo' }}
       </div>
     </div>
 
@@ -44,11 +48,18 @@
             </button>
           </div>
 
-          <!-- Botones de acción -->
+          <div class="graph-tools">
+            <h4>Herramientas</h4>
+            <div class="tool-grid">
+              <button @click="setEditorMode('move')" :class="{ active: editorMode === 'move' }" class="tool-btn">Mover</button>
+              <button @click="setEditorMode('node')" :class="{ active: editorMode === 'node' }" class="tool-btn">Nodo</button>
+              <button @click="setEditorMode('edge')" :class="{ active: editorMode === 'edge' }" class="tool-btn">Arista</button>
+              <button @click="setEditorMode('delete')" :class="{ active: editorMode === 'delete' }" class="tool-btn danger">Borrar</button>
+            </div>
+            <p class="tool-status">{{ editorStatus }}</p>
+          </div>
+
           <div class="action-buttons">
-            <button @click="generateRandomGraph" class="btn-outline">
-              🎲 Grafo Aleatorio
-            </button>
             <button @click="loadExample" class="btn-outline">📋 Ejemplo</button>
             <button @click="clearGraph" class="btn-outline danger">
               🗑️ Limpiar
@@ -82,6 +93,12 @@
                 getNodeLabel(sourceNode)
               }}</strong>
             </div>
+            <div class="info-status">
+              <strong>Destino:</strong>
+              <strong class="target-badge">{{
+                targetNode === null ? "Sin destino" : getNodeLabel(targetNode)
+              }}</strong>
+            </div>
           </div>
 
           <div class="origen-selector">
@@ -93,6 +110,22 @@
                 @click="selectSourceNode(node.id)"
                 :class="{ active: sourceNode === node.id }"
                 class="origen-btn"
+              >
+                {{ node.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="origen-selector">
+            <label>Seleccionar nodo destino:</label>
+            <div class="origen-buttons">
+              <button
+                v-for="node in nodes"
+                :key="`target-${node.id}`"
+                @click="selectTargetNode(node.id)"
+                :class="{ active: targetNode === node.id }"
+                :disabled="sourceNode === node.id"
+                class="origen-btn target-btn"
               >
                 {{ node.label }}
               </button>
@@ -129,7 +162,7 @@
             </span>
             <span class="pill pill-edge-path">
               <span class="pill-dot path-dot"></span>
-              Camino más corto
+              {{ optimizationType === 'min' ? 'Camino más corto' : 'Camino máximo' }}
             </span>
             <span class="pill pill-edge-normal">
               <span class="pill-dot normal-dot"></span>
@@ -140,10 +173,10 @@
 
         <div class="graph-instructions">
           💡 <strong>Instrucciones:</strong>
-          <span>🖱️ Clic en nodo → Seleccionar origen</span>
+          <span>Modo Nodo: clic en espacio vacío</span>
+          <span>| Modo Arista: clic origen y destino</span>
+          <span>| Mover: arrastra nodos o clic para origen</span>
           <span>| ✏️ Doble clic en arista → Editar peso</span>
-          <span>| ✋ Arrastra nodos → Reubicar</span>
-          <span>| 🗑️ Suprimir → Eliminar nodo seleccionado</span>
         </div>
 
         <div class="graph-container">
@@ -188,8 +221,8 @@
                 </svg>
               </div>
               <div>
-                <h4>Distancias desde {{ getNodeLabel(sourceNode) }}</h4>
-                <p>Camino más corto a cada nodo</p>
+                <h4>{{ optimizationType === 'min' ? 'Distancias mínimas' : 'Pesos máximos' }} desde {{ getNodeLabel(sourceNode) }}</h4>
+                <p>{{ optimizationType === 'min' ? 'Camino más corto a cada nodo' : 'Camino simple de mayor peso a cada nodo' }}</p>
               </div>
             </div>
             
@@ -201,6 +234,22 @@
                   {{ dist === Infinity ? '∞' : dist }}
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div class="result-section-card" v-if="targetNode !== null && distances.length > 0">
+            <div class="section-header">
+              <div class="section-title">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 2a6 6 0 016 6c0 4.5-6 10-6 10S4 12.5 4 8a6 6 0 016-6zm0 8a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+                <h4>Ruta al destino {{ getNodeLabel(targetNode) }}</h4>
+              </div>
+            </div>
+            <div class="target-route-card">
+              <span class="target-route-label">{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</span>
+              <strong>{{ getTargetDistance() === Infinity ? "No alcanzable" : getTargetDistance() }}</strong>
+              <span class="target-route-path">{{ getPathString(targetNode) }}</span>
             </div>
           </div>
 
@@ -219,7 +268,7 @@
                 <thead>
                   <tr>
                     <th>Destino</th>
-                    <th>Distancia</th>
+                    <th>{{ optimizationType === 'min' ? 'Distancia' : 'Peso' }}</th>
                     <th>Ruta</th>
                   </tr>
                 </thead>
@@ -274,19 +323,34 @@
             <div class="help-content-detailed">
               <div class="help-section">
                 <h3>🎯 ¿Qué es?</h3>
-                <p>Encuentra el camino más corto desde un nodo origen a todos los demás en un grafo con pesos positivos.</p>
+                <p>
+                  {{ optimizationType === 'min'
+                    ? 'Encuentra el camino más corto desde un nodo origen a todos los demás en un grafo con pesos positivos.'
+                    : 'Encuentra caminos simples de mayor peso desde un nodo origen, sin repetir nodos para evitar ciclos infinitos.' }}
+                </p>
               </div>
               <div class="help-section">
                 <h3>📝 Cómo funciona:</h3>
                 <div class="steps-list">
-                  <div class="step-detail"><div class="step-num">1</div><div class="step-text">Distancia al origen = 0, al resto = infinito</div></div>
-                  <div class="step-detail"><div class="step-num">2</div><div class="step-text">Seleccionar nodo no visitado con menor distancia</div></div>
-                  <div class="step-detail"><div class="step-num">3</div><div class="step-text">Actualizar distancias a sus vecinos</div></div>
-                  <div class="step-detail"><div class="step-num">4</div><div class="step-text">Repetir hasta visitar todos</div></div>
+                  <template v-if="optimizationType === 'min'">
+                    <div class="step-detail"><div class="step-num">1</div><div class="step-text">Distancia al origen = 0, al resto = infinito</div></div>
+                    <div class="step-detail"><div class="step-num">2</div><div class="step-text">Seleccionar nodo no visitado con menor distancia</div></div>
+                    <div class="step-detail"><div class="step-num">3</div><div class="step-text">Actualizar distancias a sus vecinos</div></div>
+                    <div class="step-detail"><div class="step-num">4</div><div class="step-text">Repetir hasta visitar todos</div></div>
+                  </template>
+                  <template v-else>
+                    <div class="step-detail"><div class="step-num">1</div><div class="step-text">Comenzar en el origen con peso acumulado 0</div></div>
+                    <div class="step-detail"><div class="step-num">2</div><div class="step-text">Explorar rutas simples sin repetir nodos</div></div>
+                    <div class="step-detail"><div class="step-num">3</div><div class="step-text">Guardar la ruta con mayor peso encontrada para cada destino</div></div>
+                    <div class="step-detail"><div class="step-num">4</div><div class="step-text">Resaltar la mejor ruta hacia el destino seleccionado</div></div>
+                  </template>
                 </div>
               </div>
               <div class="help-note-box">
-                <strong>💡 Nota:</strong> Los pesos deben ser positivos para que el algoritmo funcione correctamente.
+                <strong>💡 Nota:</strong>
+                {{ optimizationType === 'min'
+                  ? 'Los pesos deben ser positivos para que Dijkstra funcione correctamente.'
+                  : 'Maximizar caminos con ciclos puede crecer indefinidamente; por eso se buscan caminos simples.' }}
               </div>
             </div>
           </div>
@@ -299,11 +363,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 
 // Estado
 const nodeCount = ref(6);
 const sourceNode = ref(0);
+const targetNode = ref(null);
 const optimizationType = ref('min');
 const isExecuting = ref(false);
 const showHelpModal = ref(false);
@@ -311,18 +376,24 @@ const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
 const exportFileName = ref("dijkstra");
+const edgeWeight = ref(1);
+const editorMode = ref("move");
+const edgeStartNode = ref(null);
+const editorStatus = ref("Modo mover: arrastra nodos o selecciona el origen.");
 
 // Datos del grafo
 const nodes = ref([]);
 const edges = ref([]);
 const distances = ref([]);
 const previous = ref([]);
+const routePaths = ref([]);
 const pathEdges = ref([]);
 const steps = ref([]);
 const selectedNode = ref(null);
 
 // Canvas
 const canvasRef = ref(null);
+const importInputRef = ref(null);
 let ctx = null;
 let dragging = false;
 let dragNode = null;
@@ -340,6 +411,9 @@ const getNodeLabel = (id) => {
 
 const getPathString = (targetId) => {
   if (targetId === sourceNode.value) return `${getNodeLabel(sourceNode.value)}`;
+  if (routePaths.value[targetId]?.length) {
+    return routePaths.value[targetId].map((nodeId) => getNodeLabel(nodeId)).join(" → ");
+  }
   if (previous.value[targetId] === -1 || previous.value[targetId] === undefined)
     return "No hay ruta";
 
@@ -353,6 +427,11 @@ const getPathString = (targetId) => {
   return path.join(" → ");
 };
 
+const getTargetDistance = () => {
+  if (targetNode.value === null || distances.value.length === 0) return null;
+  return distances.value[targetNode.value];
+};
+
 const showMessage = (text, type) => {
   statusMessage.value = text;
   statusTone.value = type;
@@ -361,12 +440,247 @@ const showMessage = (text, type) => {
   }, 3000);
 };
 
+const setEditorMode = (mode) => {
+  editorMode.value = mode;
+  edgeStartNode.value = null;
+  selectedNode.value = null;
+  const statusByMode = {
+    move: "Modo mover: arrastra nodos o selecciona el origen.",
+    node: "Modo nodo: haz clic en un espacio vacío para crear un nodo.",
+    edge: "Modo arista: selecciona el nodo origen y luego el destino.",
+    delete: "Modo borrar: haz clic en un nodo o arista para eliminarlo.",
+  };
+  editorStatus.value = statusByMode[mode];
+  drawGraph(true);
+};
+
+const resetResults = () => {
+  distances.value = [];
+  previous.value = [];
+  routePaths.value = [];
+  pathEdges.value = [];
+  steps.value = [];
+};
+
+const pathToEdges = (path) => {
+  const routeEdges = [];
+  if (!path || path.length < 2) return routeEdges;
+
+  for (let i = 1; i < path.length; i++) {
+    routeEdges.push({ from: path[i - 1], to: path[i] });
+  }
+  return routeEdges;
+};
+
+const collectPathEdges = (paths) => {
+  const routeEdges = [];
+  paths.forEach((path) => {
+    pathToEdges(path).forEach((edge) => {
+      const exists = routeEdges.some(
+        (item) =>
+          (item.from === edge.from && item.to === edge.to) ||
+          (item.from === edge.to && item.to === edge.from),
+      );
+      if (!exists) routeEdges.push(edge);
+    });
+  });
+  return routeEdges;
+};
+
+const buildRoutePathsFromPrevious = (prev, n) => {
+  const paths = Array(n).fill(null);
+  if (sourceNode.value !== null) {
+    paths[sourceNode.value] = [sourceNode.value];
+  }
+
+  for (let target = 0; target < n; target++) {
+    if (target === sourceNode.value || prev[target] === -1 || prev[target] === undefined) continue;
+
+    const path = [];
+    const seen = new Set();
+    let current = target;
+    while (current !== -1 && current !== undefined && !seen.has(current)) {
+      seen.add(current);
+      path.unshift(current);
+      if (current === sourceNode.value) break;
+      current = prev[current];
+    }
+
+    if (path[0] === sourceNode.value) {
+      paths[target] = path;
+    }
+  }
+
+  return paths;
+};
+
+const buildPathEdgesTo = (targetId, prev = previous.value) => {
+  if (routePaths.value[targetId]?.length) {
+    return pathToEdges(routePaths.value[targetId]);
+  }
+
+  const routeEdges = [];
+  if (targetId === null || targetId === sourceNode.value || prev[targetId] === -1 || prev[targetId] === undefined) {
+    return routeEdges;
+  }
+
+  let current = targetId;
+  while (prev[current] !== -1 && prev[current] !== undefined) {
+    const from = prev[current];
+    const to = current;
+    routeEdges.push({ from, to });
+    current = from;
+    if (current === sourceNode.value) break;
+  }
+  return routeEdges;
+};
+
+const updateTargetPathHighlight = () => {
+  if (distances.value.length > 0 && targetNode.value !== null) {
+    pathEdges.value = buildPathEdgesTo(targetNode.value);
+  }
+  drawGraph(true);
+};
+
+watch(optimizationType, () => {
+  resetResults();
+  drawGraph();
+});
+
+const getDefaultNodeLabel = () => {
+  const nextIndex = nodes.value.length;
+  return nodeLabels[nextIndex % nodeLabels.length] + (nextIndex >= nodeLabels.length ? Math.floor(nextIndex / nodeLabels.length) + 1 : "");
+};
+
+const syncNodeCount = () => {
+  nodeCount.value = nodes.value.length;
+};
+
+const addNodeAt = (x, y) => {
+  const id = nodes.value.length;
+  const label = prompt("Nombre del nodo:", getDefaultNodeLabel());
+  if (label === null) return;
+
+  nodes.value.push({
+    id,
+    label: label.trim() || getDefaultNodeLabel(),
+    x,
+    y,
+  });
+
+  if (sourceNode.value === null) sourceNode.value = id;
+  syncNodeCount();
+  resetResults();
+  drawGraph();
+  showMessage("Nodo agregado", "success");
+};
+
+const remapGraphAfterNodeDelete = (nodeId) => {
+  const remainingNodes = nodes.value.filter((node) => node.id !== nodeId);
+  const idMap = new Map();
+
+  remainingNodes.forEach((node, newId) => {
+    idMap.set(node.id, newId);
+    node.id = newId;
+  });
+
+  nodes.value = remainingNodes;
+  edges.value = edges.value
+    .filter((edge) => edge.from !== nodeId && edge.to !== nodeId)
+    .map((edge) => ({
+      ...edge,
+      from: idMap.get(edge.from),
+      to: idMap.get(edge.to),
+      id: `${idMap.get(edge.from)}-${idMap.get(edge.to)}`,
+    }))
+    .filter((edge) => edge.from !== undefined && edge.to !== undefined);
+
+  if (!nodes.value.length) {
+    sourceNode.value = null;
+    targetNode.value = null;
+  } else if (sourceNode.value === nodeId || sourceNode.value === null || sourceNode.value >= nodes.value.length) {
+    sourceNode.value = 0;
+  } else {
+    sourceNode.value = idMap.get(sourceNode.value) ?? 0;
+  }
+
+  if (nodes.value.length && targetNode.value !== null && targetNode.value !== nodeId) {
+    targetNode.value = idMap.get(targetNode.value) ?? null;
+  } else {
+    targetNode.value = nodes.value.find((node) => node.id !== sourceNode.value)?.id ?? null;
+  }
+  selectedNode.value = null;
+  syncNodeCount();
+  resetResults();
+};
+
+const deleteNodeById = (nodeId) => {
+  remapGraphAfterNodeDelete(nodeId);
+  drawGraph(true);
+  showMessage("Nodo eliminado", "neutral");
+};
+
+const addEdgeBetween = (from, to) => {
+  if (from === to) {
+    showMessage("La arista necesita dos nodos distintos", "error");
+    return;
+  }
+
+  const exists = edges.value.some((edge) =>
+    (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from)
+  );
+
+  if (exists) {
+    showMessage("Esa arista ya existe", "error");
+    return;
+  }
+
+  const value = prompt(`Peso de la arista ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
+  if (value === null) return;
+
+  const weight = Number(value);
+  if (!Number.isFinite(weight) || weight <= 0) {
+    showMessage("El peso debe ser mayor a 0", "error");
+    return;
+  }
+
+  const a = Math.min(from, to);
+  const b = Math.max(from, to);
+  edges.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
+  edgeWeight.value = weight;
+  resetResults();
+  drawGraph();
+  showMessage("Arista agregada", "success");
+};
+
+const deleteEdgeById = (edgeId) => {
+  edges.value = edges.value.filter((edge) => edge.id !== edgeId);
+  resetResults();
+  drawGraph(true);
+  showMessage("Arista eliminada", "neutral");
+};
+
 // Seleccionar origen
 const selectSourceNode = (id) => {
   sourceNode.value = id;
   selectedNode.value = id;
+  if (targetNode.value === id) {
+    targetNode.value = nodes.value.find((node) => node.id !== id)?.id ?? null;
+  }
+  resetResults();
   drawGraph();
   showMessage(`🎯 Origen cambiado a ${getNodeLabel(id)}`, "success");
+};
+
+const selectTargetNode = (id) => {
+  if (id === sourceNode.value) {
+    showMessage("El destino debe ser diferente al origen", "error");
+    return;
+  }
+
+  targetNode.value = id;
+  updateTargetPathHighlight();
+  showMessage(`Destino cambiado a ${getNodeLabel(id)}`, "success");
 };
 
 const generateRandomGraph = () => {
@@ -410,10 +724,7 @@ const generateRandomGraph = () => {
 
   nodes.value = newNodes;
   edges.value = newEdges;
-  distances.value = [];
-  previous.value = [];
-  pathEdges.value = [];
-  steps.value = [];
+  resetResults();
 
   nextTick(() => {
     resizeCanvas();
@@ -458,10 +769,9 @@ const loadExample = () => {
   ];
 
   sourceNode.value = 0;
-  distances.value = [];
-  previous.value = [];
-  pathEdges.value = [];
-  steps.value = [];
+  targetNode.value = 3;
+  syncNodeCount();
+  resetResults();
 
   nextTick(() => {
     resizeCanvas();
@@ -474,10 +784,11 @@ const loadExample = () => {
 const clearGraph = () => {
   nodes.value = [];
   edges.value = [];
-  distances.value = [];
-  previous.value = [];
-  pathEdges.value = [];
-  steps.value = [];
+  sourceNode.value = null;
+  targetNode.value = null;
+  selectedNode.value = null;
+  syncNodeCount();
+  resetResults();
   drawGraph();
   showMessage("🔄 Grafo reiniciado", "neutral");
 };
@@ -495,23 +806,97 @@ const runDijkstra = async () => {
     return;
   }
 
+  if (targetNode.value !== null && targetNode.value >= nodes.value.length) {
+    targetNode.value = null;
+  }
+
   isExecuting.value = true;
   const stepList = [];
   
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   const n = nodes.value.length;
-  const dist = Array(n).fill(Infinity);
+  const isMinimizing = optimizationType.value === "min";
+  const dist = Array(n).fill(isMinimizing ? Infinity : -Infinity);
   const prev = Array(n).fill(-1);
-  const visited = Array(n).fill(false);
 
   const edgesMap = new Map();
+  const adjacency = Array.from({ length: n }, () => []);
   edges.value.forEach((edge) => {
     edgesMap.set(`${edge.from}-${edge.to}`, edge.weight);
     edgesMap.set(`${edge.to}-${edge.from}`, edge.weight);
+    adjacency[edge.from]?.push({ to: edge.to, weight: edge.weight });
+    adjacency[edge.to]?.push({ to: edge.from, weight: edge.weight });
   });
 
   dist[sourceNode.value] = 0;
+  routePaths.value = [];
+  pathEdges.value = [];
+  previous.value = [...prev];
+  distances.value = [...dist];
+
+  if (!isMinimizing) {
+    const bestPaths = Array(n).fill(null);
+    bestPaths[sourceNode.value] = [sourceNode.value];
+    stepList.push(`🎯 <strong>INICIO:</strong> Peso acumulado en <strong>${getNodeLabel(sourceNode.value)}</strong> = 0. Se buscarán caminos simples máximos.`);
+    steps.value = [...stepList];
+
+    const visited = Array(n).fill(false);
+    const dfs = async (u, currentWeight, path) => {
+      visited[u] = true;
+
+      for (const edge of adjacency[u]) {
+        const v = edge.to;
+        if (visited[v]) continue;
+
+        const newWeight = currentWeight + edge.weight;
+        const newPath = [...path, v];
+        if (newWeight > dist[v]) {
+          const oldStr = dist[v] === -Infinity ? "-∞" : dist[v];
+          dist[v] = newWeight;
+          prev[v] = u;
+          bestPaths[v] = newPath;
+          stepList.push(`  ↳ <strong>Mejorando ${getNodeLabel(v)}:</strong> ${oldStr} → ${newWeight} (ruta ${newPath.map((nodeId) => getNodeLabel(nodeId)).join(" → ")})`);
+          distances.value = [...dist];
+          previous.value = [...prev];
+          routePaths.value = [...bestPaths];
+          pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value) : collectPathEdges(bestPaths);
+          steps.value = [...stepList];
+          drawGraph(true);
+          await new Promise((resolve) => setTimeout(resolve, 180));
+        }
+
+        await dfs(v, newWeight, newPath);
+      }
+
+      visited[u] = false;
+    };
+
+    await dfs(sourceNode.value, 0, [sourceNode.value]);
+
+    routePaths.value = bestPaths;
+    distances.value = dist.map((value) => (value === -Infinity ? Infinity : value));
+    previous.value = [...prev];
+    pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value) : collectPathEdges(bestPaths);
+
+    const reached = distances.value.filter((d) => d !== Infinity && d !== 0).length;
+    if (targetNode.value !== null) {
+      const targetDistance = distances.value[targetNode.value];
+      const targetResult = targetDistance === Infinity
+        ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
+        : `Ruta máxima a ${getNodeLabel(targetNode.value)} con peso ${targetDistance}: ${getPathString(targetNode.value)}`;
+      stepList.push(`✅ <strong>DESTINO:</strong> ${targetResult}`);
+    }
+    stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas máximas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
+    steps.value = [...stepList];
+
+    drawGraph(true);
+    showMessage(`✅ Dijkstra máximo completado. ${reached} nodos alcanzables`, "success");
+    isExecuting.value = false;
+    return;
+  }
+
+  const visited = Array(n).fill(false);
   stepList.push(`🎯 <strong>INICIO:</strong> Distancia a <strong>${getNodeLabel(sourceNode.value)}</strong> = 0, a los demás = ∞`);
   steps.value = [...stepList];
 
@@ -578,9 +963,17 @@ const runDijkstra = async () => {
     }
   }
 
-  pathEdges.value = newPathEdges;
+  pathEdges.value = targetNode.value !== null ? buildPathEdgesTo(targetNode.value, prev) : newPathEdges;
+  routePaths.value = buildRoutePathsFromPrevious(prev, n);
   
   const reached = dist.filter((d) => d !== Infinity && d !== 0).length;
+  if (targetNode.value !== null) {
+    const targetDistance = dist[targetNode.value];
+    const targetResult = targetDistance === Infinity
+      ? `No hay ruta hasta ${getNodeLabel(targetNode.value)}`
+      : `Ruta a ${getNodeLabel(targetNode.value)} con distancia ${targetDistance}: ${getPathString(targetNode.value)}`;
+    stepList.push(`âœ… <strong>DESTINO:</strong> ${targetResult}`);
+  }
   stepList.push(`✅ <strong>FINALIZADO!</strong> Se encontraron rutas a ${reached} nodos desde ${getNodeLabel(sourceNode.value)}`);
   steps.value = [...stepList];
   
@@ -670,6 +1063,12 @@ const drawGraph = (highlightPaths = false) => {
     if (node.id === sourceNode.value) {
       ctx.fillStyle = "#ef4444";
       ctx.shadowColor = "rgba(239, 68, 68, 0.5)";
+    } else if (node.id === targetNode.value) {
+      ctx.fillStyle = "#8b5cf6";
+      ctx.shadowColor = "rgba(139, 92, 246, 0.45)";
+    } else if (node.id === edgeStartNode.value || node.id === selectedNode.value) {
+      ctx.fillStyle = "#f59e0b";
+      ctx.shadowColor = "rgba(245, 158, 11, 0.5)";
     } else {
       ctx.fillStyle = "#3b82f6";
       ctx.shadowColor = "rgba(59, 130, 246, 0.3)";
@@ -712,9 +1111,53 @@ const findNodeAt = (x, y) => {
   return null;
 };
 
+const findEdgeAt = (x, y) => {
+  for (const edge of edges.value) {
+    const fromNode = nodes.value.find((n) => n.id === edge.from);
+    const toNode = nodes.value.find((n) => n.id === edge.to);
+    if (!fromNode || !toNode) continue;
+
+    const midX = (fromNode.x + toNode.x) / 2;
+    const midY = (fromNode.y + toNode.y) / 2;
+    const dx = midX - x;
+    const dy = midY - y;
+    if (Math.sqrt(dx * dx + dy * dy) < 25) return edge;
+  }
+  return null;
+};
+
 const handleCanvasClick = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
+
+  if (editorMode.value === "node") {
+    if (!node) addNodeAt(pos.x, pos.y);
+    return;
+  }
+
+  if (editorMode.value === "edge") {
+    if (!node) return;
+    if (edgeStartNode.value === null) {
+      edgeStartNode.value = node.id;
+      editorStatus.value = `Origen ${node.label} seleccionado. Ahora elige destino.`;
+      drawGraph(true);
+    } else {
+      addEdgeBetween(edgeStartNode.value, node.id);
+      edgeStartNode.value = null;
+      editorStatus.value = "Modo arista: selecciona el nodo origen y luego el destino.";
+    }
+    return;
+  }
+
+  if (editorMode.value === "delete") {
+    if (node) {
+      deleteNodeById(node.id);
+      return;
+    }
+    const edge = findEdgeAt(pos.x, pos.y);
+    if (edge) deleteEdgeById(edge.id);
+    return;
+  }
 
   if (node) {
     selectSourceNode(node.id);
@@ -725,7 +1168,7 @@ const handleMouseDown = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
 
-  if (node) {
+  if (node && editorMode.value === "move") {
     dragging = true;
     dragNode = node;
     e.preventDefault();
@@ -774,28 +1217,12 @@ const handleDoubleClick = (e) => {
 };
 
 const handleKeyDown = (e) => {
+  if (e.key === "v" || e.key === "V") setEditorMode("move");
+  if (e.key === "n" || e.key === "N") setEditorMode("node");
+  if (e.key === "e" || e.key === "E") setEditorMode("edge");
+  if (e.key === "d" || e.key === "D") setEditorMode("delete");
   if (e.key === "Delete" && selectedNode.value !== null) {
-    const nodeId = selectedNode.value;
-    const connectedEdges = edges.value.filter(
-      (edge) => edge.from === nodeId || edge.to === nodeId,
-    );
-    edges.value = edges.value.filter(
-      (edge) => !connectedEdges.includes(edge),
-    );
-    nodes.value = nodes.value.filter((node) => node.id !== nodeId);
-    selectedNode.value = null;
-    // Reasignar IDs
-    nodes.value.forEach((node, newId) => {
-      node.id = newId;
-    });
-    edges.value.forEach(edge => {
-      edge.id = `${edge.from}-${edge.to}`;
-    });
-    if (sourceNode.value === nodeId) {
-      sourceNode.value = nodes.value.length > 0 ? 0 : null;
-    }
-    drawGraph(true);
-    showMessage("🗑️ Nodo eliminado", "neutral");
+    deleteNodeById(selectedNode.value);
   }
 };
 
@@ -803,8 +1230,15 @@ const handleKeyDown = (e) => {
 const triggerImport = () => importInputRef.value?.click();
 const toggleSteps = () => { showSteps.value = !showSteps.value; };
 const closeHelpModal = () => { showHelpModal.value = false; };
-const decrementNodes = () => { if (nodeCount.value > 2) { nodeCount.value--; generateRandomGraph(); } };
-const incrementNodes = () => { if (nodeCount.value < 10) { nodeCount.value++; generateRandomGraph(); } };
+const decrementNodes = () => {
+  if (nodes.value.length > 0) deleteNodeById(nodes.value[nodes.value.length - 1].id);
+};
+const incrementNodes = () => {
+  const canvas = canvasRef.value;
+  const width = canvas?.clientWidth || canvasWidth;
+  const height = canvas?.clientHeight || canvasHeight;
+  addNodeAt(width / 2, height / 2);
+};
 
 // Exportar/Importar
 const exportData = () => {
@@ -817,6 +1251,8 @@ const exportData = () => {
     nodes: nodes.value,
     edges: edges.value,
     sourceNode: sourceNode.value,
+    targetNode: targetNode.value,
+    optimizationType: optimizationType.value,
     exportDate: new Date().toISOString(),
   };
 
@@ -842,14 +1278,25 @@ const importData = (event) => {
       if (data.nodes && data.edges) {
         nodes.value = data.nodes;
         edges.value = data.edges;
-        nodeCount.value = nodes.value.length;
+        if (data.optimizationType === "min" || data.optimizationType === "max") {
+          optimizationType.value = data.optimizationType;
+        }
+        syncNodeCount();
         if (data.sourceNode !== undefined && data.sourceNode < nodes.value.length) {
           sourceNode.value = data.sourceNode;
+        } else {
+          sourceNode.value = nodes.value.length > 0 ? 0 : null;
         }
-        distances.value = [];
-        previous.value = [];
-        pathEdges.value = [];
-        steps.value = [];
+        if (
+          data.targetNode !== undefined &&
+          data.targetNode < nodes.value.length &&
+          data.targetNode !== sourceNode.value
+        ) {
+          targetNode.value = data.targetNode;
+        } else {
+          targetNode.value = nodes.value.find((node) => node.id !== sourceNode.value)?.id ?? null;
+        }
+        resetResults();
         nextTick(() => {
           resizeCanvas();
           drawGraph();
@@ -907,9 +1354,6 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
 });
 
-watch(nodeCount, () => {
-  generateRandomGraph();
-});
 </script>
 
 <style scoped>
@@ -1069,6 +1513,57 @@ watch(nodeCount, () => {
   gap: 8px;
 }
 
+.graph-tools {
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.graph-tools h4 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tool-btn {
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tool-btn:hover,
+.tool-btn.active {
+  border-color: #667eea;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.tool-btn.danger:hover,
+.tool-btn.danger.active {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.tool-status {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .btn-outline {
   flex: 1;
   min-width: 70px;
@@ -1141,6 +1636,14 @@ watch(nodeCount, () => {
   display: inline-block;
 }
 
+.target-badge {
+  background: #8b5cf6;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
 .origen-selector label {
   display: block;
   font-size: 0.8rem;
@@ -1170,6 +1673,17 @@ watch(nodeCount, () => {
   background: #ef4444;
   border-color: #ef4444;
   color: white;
+}
+
+.origen-btn.target-btn.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.origen-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-execute {
@@ -1358,6 +1872,9 @@ watch(nodeCount, () => {
 .source-color {
   background: #ef4444;
 }
+.target-color {
+  background: #8b5cf6;
+}
 .path-color {
   background: #10b981;
 }
@@ -1472,6 +1989,36 @@ watch(nodeCount, () => {
 
 .distance-value.infinite {
   color: #ef4444;
+}
+
+.target-route-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.target-route-label {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.target-route-card strong {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.target-route-path {
+  grid-column: 1 / -1;
+  color: #059669;
+  font-family: monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .section-header {
@@ -1767,3 +2314,5 @@ watch(nodeCount, () => {
   }
 }
 </style>
+
+

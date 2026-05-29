@@ -46,10 +46,18 @@
             </button>
           </div>
 
+          <div class="graph-tools">
+            <h4>Herramientas</h4>
+            <div class="tool-grid">
+              <button @click="setEditorMode('move')" :class="{ active: editorMode === 'move' }" class="tool-btn">Mover</button>
+              <button @click="setEditorMode('node')" :class="{ active: editorMode === 'node' }" class="tool-btn">Nodo</button>
+              <button @click="setEditorMode('edge')" :class="{ active: editorMode === 'edge' }" class="tool-btn">Arista</button>
+              <button @click="setEditorMode('delete')" :class="{ active: editorMode === 'delete' }" class="tool-btn danger">Borrar</button>
+            </div>
+            <p class="tool-status">{{ editorStatus }}</p>
+          </div>
+
           <div class="action-buttons">
-            <button @click="generateRandomGraph" class="btn-outline">
-              🎲 Grafo Aleatorio
-            </button>
             <button @click="loadExample" class="btn-outline">📋 Ejemplo</button>
             <button @click="resetGraph" class="btn-outline danger">
               🗑️ Limpiar
@@ -123,10 +131,10 @@
 
         <div class="graph-instructions">
           💡 <strong>Instrucciones:</strong>
+          <span>Modo Nodo: clic en espacio vacío</span>
+          <span>| Modo Arista: clic origen y destino</span>
+          <span>| Mover: arrastra nodos</span>
           <span>✏️ Doble clic en arista → Editar peso</span>
-          <span>| ✋ Arrastra nodos → Reubicar</span>
-          <span>| 🖱️ Clic en nodo → Seleccionar</span>
-          <span>| 🗑️ Suprimir → Eliminar elemento</span>
         </div>
 
         <div class="graph-container">
@@ -304,11 +312,20 @@
                   </div>
                 </div>
               </div>
+              <div class="help-section">
+                <h3>🧭 Uso en esta pantalla:</h3>
+                <ul>
+                  <li>Elige <strong>Minimizar</strong> para obtener el árbol de expansión mínima.</li>
+                  <li>Elige <strong>Maximizar</strong> para obtener el árbol de expansión máxima.</li>
+                  <li>Usa las herramientas de nodo y arista para dibujar el grafo.</li>
+                  <li>Haz doble clic sobre una arista para cambiar su peso.</li>
+                </ul>
+              </div>
               <div class="help-note-box">
                 <strong>💡 Nota:</strong> 
                 {{ optimizationType === 'min' 
-                  ? 'El MST minimiza el peso total de las conexiones.' 
-                  : 'El árbol máximo maximiza el peso total de las conexiones (problema de red de máxima capacidad/beneficio).' }}
+                  ? 'El MST minimiza el peso total de las conexiones. El grafo debe ser conexo para formar un árbol completo.' 
+                  : 'El árbol máximo maximiza el peso total de las conexiones. El grafo debe ser conexo para formar un árbol completo.' }}
               </div>
             </div>
           </div>
@@ -327,7 +344,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
 
 // Estado
 const nodeCount = ref(6);
@@ -338,6 +355,10 @@ const showSteps = ref(false);
 const statusMessage = ref("");
 const statusTone = ref("");
 const exportFileName = ref("kruskal");
+const edgeWeight = ref(1);
+const editorMode = ref("move");
+const edgeStartNode = ref(null);
+const editorStatus = ref("Modo mover: arrastra nodos para reubicarlos.");
 
 // Datos del grafo
 const nodes = ref([]);
@@ -349,6 +370,7 @@ const selectedNode = ref(null);
 
 // Canvas
 const canvasRef = ref(null);
+const importInputRef = ref(null);
 let ctx = null;
 let dragging = false;
 let dragNode = null;
@@ -362,6 +384,132 @@ const nodeLabels = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const getNodeLabel = (id) => {
   const node = nodes.value.find((n) => n.id === id);
   return node ? node.label : `N${id}`;
+};
+
+const showMessage = (text, type) => {
+  statusMessage.value = text;
+  statusTone.value = type;
+  setTimeout(() => {
+    if (statusMessage.value === text) statusMessage.value = "";
+  }, 2500);
+};
+
+const setEditorMode = (mode) => {
+  editorMode.value = mode;
+  edgeStartNode.value = null;
+  selectedNode.value = null;
+  const statusByMode = {
+    move: "Modo mover: arrastra nodos para reubicarlos.",
+    node: "Modo nodo: haz clic en un espacio vacío para crear un nodo.",
+    edge: "Modo arista: selecciona el nodo origen y luego el destino.",
+    delete: "Modo borrar: haz clic en un nodo o arista para eliminarlo.",
+  };
+  editorStatus.value = statusByMode[mode];
+  drawGraph(true);
+};
+
+const resetResults = () => {
+  selectedEdges.value = [];
+  totalWeight.value = 0;
+  steps.value = [];
+};
+
+const syncNodeCount = () => {
+  nodeCount.value = nodes.value.length;
+};
+
+const getDefaultNodeLabel = () => {
+  const nextIndex = nodes.value.length;
+  return nodeLabels[nextIndex % nodeLabels.length] + (nextIndex >= nodeLabels.length ? Math.floor(nextIndex / nodeLabels.length) + 1 : "");
+};
+
+const addNodeAt = (x, y) => {
+  const id = nodes.value.length;
+  const label = prompt("Nombre del nodo:", getDefaultNodeLabel());
+  if (label === null) return;
+
+  nodes.value.push({
+    id,
+    label: label.trim() || getDefaultNodeLabel(),
+    x,
+    y,
+  });
+
+  syncNodeCount();
+  resetResults();
+  drawGraph();
+  showMessage("Nodo agregado", "success");
+};
+
+const remapGraphAfterNodeDelete = (nodeId) => {
+  const remainingNodes = nodes.value.filter((node) => node.id !== nodeId);
+  const idMap = new Map();
+
+  remainingNodes.forEach((node, newId) => {
+    idMap.set(node.id, newId);
+    node.id = newId;
+  });
+
+  nodes.value = remainingNodes;
+  edgesList.value = edgesList.value
+    .filter((edge) => edge.from !== nodeId && edge.to !== nodeId)
+    .map((edge) => ({
+      ...edge,
+      from: idMap.get(edge.from),
+      to: idMap.get(edge.to),
+      id: `${idMap.get(edge.from)}-${idMap.get(edge.to)}`,
+    }))
+    .filter((edge) => edge.from !== undefined && edge.to !== undefined);
+
+  selectedNode.value = null;
+  syncNodeCount();
+  resetResults();
+};
+
+const deleteNodeById = (nodeId) => {
+  remapGraphAfterNodeDelete(nodeId);
+  drawGraph(true);
+  showMessage("Nodo eliminado", "neutral");
+};
+
+const addEdgeBetween = (from, to) => {
+  if (from === to) {
+    showMessage("La arista necesita dos nodos distintos", "error");
+    return;
+  }
+
+  const exists = edgesList.value.some((edge) =>
+    (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from)
+  );
+
+  if (exists) {
+    showMessage("Esa arista ya existe", "error");
+    return;
+  }
+
+  const value = prompt(`Peso de la arista ${getNodeLabel(from)} - ${getNodeLabel(to)}:`, edgeWeight.value || 1);
+  if (value === null) return;
+
+  const weight = Number(value);
+  if (!Number.isFinite(weight) || weight <= 0) {
+    showMessage("El peso debe ser mayor a 0", "error");
+    return;
+  }
+
+  const a = Math.min(from, to);
+  const b = Math.max(from, to);
+  edgesList.value.push({ id: `${a}-${b}`, from: a, to: b, weight });
+  edgeWeight.value = weight;
+  resetResults();
+  drawGraph();
+  showMessage("Arista agregada", "success");
+};
+
+const deleteEdgeById = (edgeId) => {
+  edgesList.value = edgesList.value.filter((edge) => edge.id !== edgeId);
+  resetResults();
+  drawGraph(true);
+  showMessage("Arista eliminada", "neutral");
 };
 
 const generateRandomGraph = () => {
@@ -474,9 +622,9 @@ const loadExample = () => {
 const resetGraph = () => {
   nodes.value = [];
   edgesList.value = [];
-  selectedEdges.value = [];
-  totalWeight.value = 0;
-  steps.value = [];
+  selectedNode.value = null;
+  syncNodeCount();
+  resetResults();
   drawGraph();
   statusMessage.value = "🔄 Grafo reiniciado";
   statusTone.value = "neutral";
@@ -719,9 +867,55 @@ const findNodeAt = (x, y) => {
   return null;
 };
 
+const findEdgeAt = (x, y) => {
+  for (const edge of edgesList.value) {
+    const fromNode = nodes.value.find((n) => n.id === edge.from);
+    const toNode = nodes.value.find((n) => n.id === edge.to);
+    if (!fromNode || !toNode) continue;
+
+    const midX = (fromNode.x + toNode.x) / 2;
+    const midY = (fromNode.y + toNode.y) / 2;
+    const dx = midX - x;
+    const dy = midY - y;
+    if (Math.sqrt(dx * dx + dy * dy) < 25) return edge;
+  }
+  return null;
+};
+
 const handleCanvasClick = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
+
+  if (editorMode.value === "node") {
+    if (!node) addNodeAt(pos.x, pos.y);
+    return;
+  }
+
+  if (editorMode.value === "edge") {
+    if (!node) return;
+    if (edgeStartNode.value === null) {
+      edgeStartNode.value = node.id;
+      selectedNode.value = node.id;
+      editorStatus.value = `Origen ${node.label} seleccionado. Ahora elige destino.`;
+      drawGraph(true);
+    } else {
+      addEdgeBetween(edgeStartNode.value, node.id);
+      edgeStartNode.value = null;
+      selectedNode.value = null;
+      editorStatus.value = "Modo arista: selecciona el nodo origen y luego el destino.";
+    }
+    return;
+  }
+
+  if (editorMode.value === "delete") {
+    if (node) {
+      deleteNodeById(node.id);
+      return;
+    }
+    const edge = findEdgeAt(pos.x, pos.y);
+    if (edge) deleteEdgeById(edge.id);
+    return;
+  }
 
   if (node) {
     selectedNode.value = node.id;
@@ -739,7 +933,7 @@ const handleMouseDown = (e) => {
   const pos = getMousePos(e);
   const node = findNodeAt(pos.x, pos.y);
 
-  if (node) {
+  if (node && editorMode.value === "move") {
     dragging = true;
     dragNode = node;
     e.preventDefault();
@@ -790,20 +984,12 @@ const handleDoubleClick = (e) => {
 };
 
 const handleKeyDown = (e) => {
+  if (e.key === "v" || e.key === "V") setEditorMode("move");
+  if (e.key === "n" || e.key === "N") setEditorMode("node");
+  if (e.key === "e" || e.key === "E") setEditorMode("edge");
+  if (e.key === "d" || e.key === "D") setEditorMode("delete");
   if (e.key === "Delete" && selectedNode.value !== null) {
-    const nodeId = selectedNode.value;
-    const connectedEdges = edgesList.value.filter(
-      (edge) => edge.from === nodeId || edge.to === nodeId,
-    );
-    edgesList.value = edgesList.value.filter(
-      (edge) => !connectedEdges.includes(edge),
-    );
-    nodes.value = nodes.value.filter((node) => node.id !== nodeId);
-    selectedNode.value = null;
-    drawGraph(true);
-    statusMessage.value = "🗑️ Nodo eliminado";
-    statusTone.value = "neutral";
-    setTimeout(() => (statusMessage.value = ""), 1500);
+    deleteNodeById(selectedNode.value);
   }
 };
 
@@ -816,16 +1002,13 @@ const closeHelpModal = () => {
   showHelpModal.value = false;
 };
 const decrementNodes = () => {
-  if (nodeCount.value > 2) {
-    nodeCount.value--;
-    generateRandomGraph();
-  }
+  if (nodes.value.length > 0) deleteNodeById(nodes.value[nodes.value.length - 1].id);
 };
 const incrementNodes = () => {
-  if (nodeCount.value < 10) {
-    nodeCount.value++;
-    generateRandomGraph();
-  }
+  const canvas = canvasRef.value;
+  const width = canvas?.clientWidth || canvasWidth;
+  const height = canvas?.clientHeight || canvasHeight;
+  addNodeAt(width / 2, height / 2);
 };
 
 // Exportar/Importar
@@ -870,7 +1053,7 @@ const importData = (event) => {
       if (data.nodes && data.edges) {
         nodes.value = data.nodes;
         edgesList.value = data.edges;
-        nodeCount.value = nodes.value.length;
+        syncNodeCount();
         if (data.optimizationType) {
           optimizationType.value = data.optimizationType;
         }
@@ -938,9 +1121,6 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
 });
 
-watch(nodeCount, () => {
-  generateRandomGraph();
-});
 </script>
 
 <style scoped>
@@ -1109,6 +1289,57 @@ watch(nodeCount, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.graph-tools {
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.graph-tools h4 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tool-btn {
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tool-btn:hover,
+.tool-btn.active {
+  border-color: #667eea;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.tool-btn.danger:hover,
+.tool-btn.danger.active {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.tool-status {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .btn-outline {
@@ -1788,3 +2019,4 @@ watch(nodeCount, () => {
   }
 }
 </style>
+
