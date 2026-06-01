@@ -1,185 +1,388 @@
 <template>
-  <div class="toolbar">
-    <div class="group">
-      <button
-        @click="setMode('move')"
-        :class="{ active: currentMode === 'move' }"
-        title="Mover nodos"
-      >
-        🖐 Mover
-      </button>
-      <button
-        @click="setMode('node')"
-        :class="{ active: currentMode === 'node' }"
-        title="Clic en espacio vacío para crear"
-      >
-        🔵 Nodo
-      </button>
-      <button
-        @click="setMode('edge')"
-        :class="{ active: currentMode === 'edge' }"
-        title="Clic origen -> Clic destino"
-      >
-        🔗 Arista
-      </button>
+  <div class="toolbar-static">
+    <div class="toolbar-section">
+      <h3>Herramientas</h3>
 
-      <button
-        @click="setMode('delete')"
-        :class="{ active: currentMode === 'delete' }"
-        title="Clic en nodo/arista para borrar"
-        style="color: #dc3545"
-      >
-        🧽 Borrador
+      <div class="mode-buttons">
+        <button
+          v-for="tool in tools"
+          :key="tool.mode"
+          @click="setMode(tool.mode)"
+          :class="{ active: currentMode === tool.mode }"
+          class="mode-btn"
+        >
+          <span class="mode-icon">{{ tool.icon }}</span>
+          <div class="mode-info">
+            <span class="mode-name">{{ tool.name }}</span>
+            <span class="mode-shortcut">{{ tool.shortcut }}</span>
+          </div>
+        </button>
+      </div>
+
+      <button @click="clearGraph" class="quick-clear-btn">
+        Limpiar grafo
       </button>
     </div>
 
-    <div class="separator"></div>
-
-    <div class="options">
-      <label class="checkbox-label">
-        <input type="checkbox" :checked="isDirected" @change="toggleDirected" />
-        <span>Dirigido (Flechas)</span>
-      </label>
+    <div v-if="showFiles" class="toolbar-section">
+      <h3>Archivos</h3>
+      <div class="action-buttons">
+        <button @click="exportGraph" class="action-btn export-btn">
+          Exportar
+        </button>
+        <input
+          type="file"
+          id="import-file"
+          accept=".json"
+          style="display: none"
+          @change="importGraph"
+        />
+        <label for="import-file" class="action-btn import-btn">
+          Importar
+        </label>
+        <button v-if="showRandom" @click="generateRandomGraph" class="action-btn random-btn">
+          Aleatorio
+        </button>
+        
+      </div>
     </div>
 
-    <div class="separator"></div>
+    <div v-if="showVisualization" class="toolbar-section">
+      <h3>Visualizacion</h3>
+      <button @click="toggleMatrixPanel" class="matrix-btn">
+        {{ showMatrixPanel ? "Ocultar Matriz" : "Mostrar Matriz" }}
+      </button>
+    </div>
 
-    <span class="status" v-if="currentMode === 'edge'">
-      👉 {{ edgeStep }}
-    </span>
+    <div v-if="currentMode === 'edge' && edgeStep" class="status-bar">
+      <span class="status-icon">🔗</span>
+      <span class="status-text">{{ edgeStep }}</span>
+    </div>
 
-    <button @click="clearGraph" class="danger">🗑 Borrar Todo</button>
+    <div class="toolbar-footer">
+      <small>Tips:</small>
+      <small>V: Mover | N: Nodo | E: Arista | D: Borrar</small>
+      <small>Doble click para editar</small>
+    </div>
   </div>
-
-  <button
-    @click="toggleMatrixPanel"
-    :class="{ active: showMatrixPanel }"
-    style="
-      background: #10b981;
-      color: white;
-      border-color: #10b981;
-      margin-left: 10px;
-    "
-  >
-    🧮 Matriz
-  </button>
 </template>
 
 <script setup>
 import { useGraph } from "../composables/useGraph";
 
+defineProps({
+  showFiles: {
+    type: Boolean,
+    default: true,
+  },
+  showRandom: {
+    type: Boolean,
+    default: true,
+  },
+  showVisualization: {
+    type: Boolean,
+    default: true,
+  },
+});
+
 const {
   setMode,
   currentMode,
   clearGraph,
-  isDirected,
-  toggleDirected,
   edgeStep,
-  toggleMatrixPanel,
+  exportGraph,
+  importGraph,
+  nodes,
+  edges,
   showMatrixPanel,
+  toggleMatrixPanel,
 } = useGraph();
+
+const tools = [
+  { mode: "move", name: "Mover", icon: "🖐️", shortcut: "V" },
+  { mode: "node", name: "Nodo", icon: "🔵", shortcut: "N" },
+  { mode: "edge", name: "Arista", icon: "🔗", shortcut: "E" },
+  { mode: "delete", name: "Borrar", icon: "🧽", shortcut: "D" },
+];
+
+const generateRandomGraph = () => {
+  const nodeCount = Math.floor(Math.random() * 8) + 4;
+
+  nodes.clear();
+  edges.clear();
+
+  for (let i = 1; i <= nodeCount; i++) {
+    const angle = (i / nodeCount) * Math.PI * 2;
+    const radius = 200;
+    const x = 400 + radius * Math.cos(angle);
+    const y = 250 + radius * Math.sin(angle);
+
+    nodes.add({
+      id: i,
+      label: String.fromCharCode(64 + i),
+      x,
+      y,
+    });
+  }
+
+  for (let i = 1; i <= nodeCount; i++) {
+    for (let j = 1; j <= nodeCount; j++) {
+      if (i !== j && Math.random() < 0.25) {
+        const weight = Math.floor(Math.random() * 9) + 1;
+        edges.add({
+          from: i,
+          to: j,
+          label: String(weight),
+          arrows: "to",
+        });
+      }
+    }
+  }
+};
 </script>
+
 <style scoped>
-/* --- ESTILOS ORIGINALES (ESCRITORIO) --- */
-.toolbar {
-  padding: 10px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+.toolbar-static {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
   display: flex;
-  flex-wrap: wrap; /* ¡Magia 1! Permite que los elementos bajen de línea */
-  gap: 15px;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 16px;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.toolbar-section {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 20px;
+}
+
+.toolbar-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.toolbar-section h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mode-btn {
+  display: flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.group {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap; /* Permite que los botones del grupo también salten si es muy angosto */
-}
-
-button {
-  padding: 8px 16px;
-  border: 1px solid #ced4da;
-  background: white;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.mode-btn:hover {
+  background: #e2e8f0;
+  transform: translateX(2px);
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #2563eb;
+  color: white;
+}
+
+.mode-icon {
+  font-size: 1.2rem;
+}
+
+.mode-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mode-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.mode-shortcut {
+  font-size: 0.7rem;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.active .mode-shortcut {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.quick-clear-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-clear-btn:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: center;
   transition: all 0.2s;
   font-weight: 500;
 }
 
-button:hover {
-  background: #e9ecef;
-}
-
-button.active {
-  background: #0d6efd;
+.export-btn {
+  background: #10b981;
   color: white;
-  border-color: #0d6efd;
 }
 
-.checkbox-label {
+.import-btn {
+  background: #f59e0b;
+  color: white;
+  display: inline-block;
+  text-align: center;
+  cursor: pointer;
+}
+
+.random-btn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.clear-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.matrix-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.matrix-btn:hover {
+  background: #e2e8f0;
+}
+
+.status-bar {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
-  user-select: none;
+  font-size: 0.8rem;
+  border-left: 3px solid #f59e0b;
 }
 
-.status {
-  font-weight: bold;
-  color: #d63384;
+.status-icon {
+  font-size: 1rem;
 }
 
-.danger {
-  margin-left: auto;
-  background: #dc3545;
-  color: white;
-  border: none;
-}
-.danger:hover {
-  background: #bb2d3b;
+.status-text {
+  font-weight: 500;
+  color: #92400e;
 }
 
-.separator {
-  width: 1px;
-  height: 25px;
-  background: #ccc;
+.toolbar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* --- ESTILOS PARA CELULARES --- */
+.toolbar-footer small {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.toolbar-static::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toolbar-static::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.toolbar-static::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
 @media (max-width: 768px) {
-  .toolbar {
-    justify-content: center; /* Centramos todo */
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .group {
-    justify-content: center;
-    width: 100%; /* Forzamos a que el grupo de botones tome todo el ancho */
-  }
-
-  .separator {
-    display: none; /* Ocultamos las rayitas grises en celular porque se ven mal al bajar de línea */
-  }
-
-  .danger {
-    margin-left: 0; /* Quitamos el margen automático */
-    width: 100%; /* Hacemos el botón de borrar de todo el ancho (más fácil de tocar) */
-    padding: 12px; /* Un poco más alto para los dedos */
-  }
-
-  .options {
+  .toolbar-static {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    max-height: 300px;
   }
 
-  .status {
-    width: 100%;
-    text-align: center;
-    margin-top: -5px;
+  .mode-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .action-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
   }
 }
 </style>

@@ -7,14 +7,31 @@ const edges = new DataSet([]);
 const currentMode = ref("move");
 const edgeStep = ref("Inactivo");
 const sourceNode = ref(null);
-const isDirected = ref(false);
 
-// --- NUEVO: ESTADO DE LA MATRIZ ---
+// --- ESTADO DE LA MATRIZ ---
 const showMatrixPanel = ref(false);
 const matrixData = ref({ labels: [], matrix: [] });
 
 export function useGraph() {
-  // Función para calcular y actualizar la matriz al instante
+  const sanitizeNodeForExport = (node) => {
+    const { color, borderWidth, shadow, chosen, ...cleanNode } = node;
+    return cleanNode;
+  };
+
+  const sanitizeEdgeForExport = (edge) => {
+    const {
+      color,
+      width,
+      dashes,
+      shadow,
+      chosen,
+      selectionWidth,
+      hoverWidth,
+      ...cleanEdge
+    } = edge;
+    return cleanEdge;
+  };
+  // Función para calcular y actualizar la matriz
   const updateMatrix = () => {
     const allNodes = nodes.get().sort((a, b) => a.id - b.id);
     const allEdges = edges.get();
@@ -37,17 +54,18 @@ export function useGraph() {
 
       if (fromIdx !== undefined && toIdx !== undefined) {
         matrix[fromIdx][toIdx] = weight;
-        if (!isDirected.value) matrix[toIdx][fromIdx] = weight;
       }
     });
 
     matrixData.value = { labels, matrix };
   };
 
-  // Mostrar/Ocultar el panel lateral
+  // Mostrar/Ocultar el panel de matriz
   const toggleMatrixPanel = () => {
     showMatrixPanel.value = !showMatrixPanel.value;
-    if (showMatrixPanel.value) updateMatrix();
+    if (showMatrixPanel.value) {
+      updateMatrix();
+    }
   };
 
   const setMode = (mode) => {
@@ -71,9 +89,19 @@ export function useGraph() {
   const addNode = (x, y) => {
     const allIds = nodes.getIds();
     const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-    nodes.add({ id: newId, label: getLetterLabel(newId), x, y });
+    const defaultLabel = getLetterLabel(newId);
+    let label = window.prompt("Nombre del nodo:", defaultLabel);
 
-    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+    if (label === null) return;
+
+    label = label.trim();
+    if (!label) {
+      label = defaultLabel;
+    }
+
+    nodes.add({ id: newId, label, x, y });
+
+    if (showMatrixPanel.value) updateMatrix();
   };
 
   const setSourceNode = (nodeId) => {
@@ -85,20 +113,26 @@ export function useGraph() {
     });
   };
 
+  const cancelEdgeSelection = () => {
+    if (sourceNode.value !== null) {
+      nodes.update({ id: sourceNode.value, color: null });
+    }
+    sourceNode.value = null;
+    edgeStep.value = currentMode.value === "edge" ? "Selecciona Origen" : "Inactivo";
+  };
+
   const connectNodes = (targetId, weight) => {
     if (sourceNode.value !== null) {
       edges.add({
         from: sourceNode.value,
         to: targetId,
         label: String(weight),
-        arrows: isDirected.value ? "to" : undefined,
+        arrows: "to",
         font: { align: "top", size: 14, color: "#333333", background: "white" },
       });
-      nodes.update({ id: sourceNode.value, color: null });
-      sourceNode.value = null;
-      edgeStep.value = "Selecciona Origen";
+      cancelEdgeSelection();
 
-      if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+      if (showMatrixPanel.value) updateMatrix();
     }
   };
 
@@ -119,7 +153,19 @@ export function useGraph() {
     }
     edges.update({ id: edgeId, label: String(newWeight) });
 
-    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const updateNodeLabel = (nodeId) => {
+    const node = nodes.get(nodeId);
+    if (!node) return;
+    let newLabel = window.prompt("Modifica el nombre del nodo:", node.label);
+
+    if (newLabel === null || newLabel.trim() === "") return;
+
+    nodes.update({ id: nodeId, label: newLabel.trim() });
+
+    if (showMatrixPanel.value) updateMatrix();
   };
 
   const deleteNode = (nodeId) => {
@@ -128,30 +174,84 @@ export function useGraph() {
       .filter((e) => e.from === nodeId || e.to === nodeId);
     edges.remove(connectedEdges.map((e) => e.id));
     nodes.remove(nodeId);
-    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+    if (showMatrixPanel.value) updateMatrix();
   };
 
   const deleteEdge = (edgeId) => {
     edges.remove(edgeId);
-    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
-  };
-
-  const toggleDirected = () => {
-    isDirected.value = !isDirected.value;
-    const allEdges = edges.get();
-    const updates = allEdges.map((edge) => ({
-      id: edge.id,
-      arrows: isDirected.value ? "to" : undefined,
-    }));
-    edges.update(updates);
-    if (showMatrixPanel.value) updateMatrix(); // Actualiza matriz en vivo
+    if (showMatrixPanel.value) updateMatrix();
   };
 
   const clearGraph = () => {
     nodes.clear();
     edges.clear();
     setMode("move");
-    if (showMatrixPanel.value) updateMatrix(); // Limpia la matriz
+    if (showMatrixPanel.value) updateMatrix();
+  };
+
+  const exportGraph = () => {
+    const data = {
+      nodes: nodes.get().map(sanitizeNodeForExport),
+      edges: edges.get().map(sanitizeEdgeForExport),
+      isDirected: true,
+    };
+    let fileName = window.prompt("Nombre del archivo:", "mi_grafo");
+
+    if (fileName === null) return;
+
+    fileName = fileName.trim();
+    if (!fileName) {
+      fileName = "mi_grafo";
+    }
+    if (!fileName.toLowerCase().endsWith(".json")) {
+      fileName = `${fileName}.json`;
+    }
+
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(data));
+
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", fileName);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const importGraph = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+
+        nodes.clear();
+        edges.clear();
+
+        if (data.nodes) nodes.add(data.nodes);
+        if (data.edges) {
+          const edgesWithArrows = data.edges.map(edge => ({
+            ...edge,
+            arrows: "to"
+          }));
+          edges.add(edgesWithArrows);
+        }
+
+        if (showMatrixPanel.value) updateMatrix();
+
+        alert("✅ Grafo importado con éxito");
+      } catch (error) {
+        alert(
+          "❌ Error al leer el archivo. Asegúrate de que sea un archivo .json válido.",
+        );
+      }
+    };
+    reader.readAsText(file);
+
+    event.target.value = null;
   };
 
   return {
@@ -160,18 +260,21 @@ export function useGraph() {
     currentMode,
     edgeStep,
     sourceNode,
-    isDirected,
     showMatrixPanel,
-    matrixData, // EXPORTAMOS LA MATRIZ Y SU ESTADO
+    matrixData,
     setMode,
     addNode,
     setSourceNode,
     connectNodes,
     updateEdgeWeight,
+    updateNodeLabel,
     deleteNode,
     deleteEdge,
-    toggleDirected,
     clearGraph,
+    updateMatrix,
     toggleMatrixPanel,
+    exportGraph,
+    importGraph,
+    cancelEdgeSelection,
   };
 }
