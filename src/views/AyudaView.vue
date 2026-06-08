@@ -3,11 +3,12 @@
     <section class="hero">
       <div class="hero-copy">
         <span class="eyebrow">Centro de ayuda</span>
-        <h1>Guia de uso de la plataforma</h1>
+        <h1>Guía de uso de la plataforma</h1>
         <p>
-          Esta pagina web permite aprender, construir y analizar grafos de forma
-          visual. Aqui puedes revisar que hace cada modulo y como aprovechar las
-          herramientas disponibles.
+          Esta página web permite aprender, construir y analizar algoritmos de
+          forma visual. Aquí encontrarás una referencia rápida de cada sección,
+          las herramientas disponibles y algunas recomendaciones para resolver
+          ejercicios con mayor claridad.
         </p>
       </div>
     </section>
@@ -16,87 +17,94 @@
       <article class="help-card">
         <h2>Inicio</h2>
         <p>
-          Es la puerta principal de la plataforma. Presenta el proyecto y te da
-          acceso rapido para comenzar a experimentar con los algoritmos.
+          Presenta el proyecto de Análisis de Algoritmos y ofrece el acceso
+          inicial para comenzar a experimentar con las herramientas de la
+          plataforma.
         </p>
       </article>
 
       <article class="help-card">
         <h2>Algoritmo</h2>
         <p>
-          Reune los modulos de trabajo para resolver problemas con grafos. Desde
-          aqui puedes entrar a las vistas donde se calculan recorridos,
-          asignaciones y otros analisis visuales.
+          Reúne los módulos de práctica. Desde esta sección puedes trabajar con
+          ordenamiento, árboles, caminos mínimos, árbol de expansión mínima,
+          transporte y asignación.
         </p>
       </article>
 
       <article class="help-card">
         <h2>Crea tu Grafo</h2>
         <p>
-          Es el editor interactivo. Permite dibujar nodos y aristas, moverlos,
-          borrar elementos y construir el grafo base que luego usan los demas
-          modulos.
+          Es el editor interactivo para dibujar nodos y aristas, mover elementos,
+          asignar pesos, eliminar conexiones y preparar ejemplos de grafos para
+          analizarlos visualmente.
         </p>
       </article>
 
       <article class="help-card">
         <h2>Acerca de</h2>
         <p>
-          Muestra informacion general del proyecto, la materia y el equipo de
-          trabajo que desarrollo la aplicacion.
+          Muestra información general del proyecto, la materia y el equipo de
+          trabajo que desarrolló la aplicación.
         </p>
       </article>
     </section>
 
     <section class="detail-section">
       <div class="section-heading">
-        <h2>Herramientas principales</h2>
+        <h2>Módulos disponibles</h2>
         <p>
-          Estas son las acciones que mas se usan dentro del editor de grafos y
-          los modulos conectados a el.
+          Cada módulo está pensado para practicar un tipo de problema y observar
+          el resultado paso a paso.
         </p>
       </div>
 
       <div class="feature-list">
         <article class="feature-item">
-          <h3>Mover</h3>
-          <p>Sirve para reposicionar nodos y acomodar el grafo en pantalla.</p>
-        </article>
-
-        <article class="feature-item">
-          <h3>Nodo</h3>
+          <h3>Ordenamiento</h3>
           <p>
-            Crea nuevos nodos. Al insertarlos, la aplicacion puede solicitar un
-            nombre para identificarlos mejor.
+            Permite comparar métodos de ordenamiento y visualizar cómo cambian
+            los datos durante la ejecución del algoritmo.
           </p>
         </article>
 
         <article class="feature-item">
-          <h3>Arista</h3>
+          <h3>Árboles</h3>
           <p>
-            Conecta nodos y asigna pesos para representar costos, distancias o
-            relaciones entre ellos.
+            Ayuda a construir y revisar estructuras jerárquicas, identificando
+            nodos, relaciones y recorridos.
           </p>
         </article>
 
         <article class="feature-item">
-          <h3>Borrar</h3>
-          <p>Elimina nodos o aristas que ya no forman parte del grafo.</p>
-        </article>
-
-        <article class="feature-item">
-          <h3>Exportar e importar</h3>
+          <h3>Dijkstra</h3>
           <p>
-            Permiten guardar el trabajo en un archivo y volver a cargarlo mas
-            tarde para seguir editando.
+            Calcula el camino de menor costo desde un nodo de origen hacia otros
+            nodos en un grafo con pesos no negativos.
           </p>
         </article>
 
         <article class="feature-item">
-          <h3>Limpiar grafo</h3>
+          <h3>Kruskal</h3>
           <p>
-            Reinicia por completo el dibujo actual para comenzar otro ejemplo
-            desde cero.
+            Encuentra un árbol de expansión mínima seleccionando las aristas de
+            menor peso sin formar ciclos.
+          </p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Esquina noroeste</h3>
+          <p>
+            Genera una solución inicial para problemas de transporte usando
+            oferta, demanda y costos de distribución.
+          </p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Asignación</h3>
+          <p>
+            Resuelve problemas donde se deben asignar tareas, personas o recursos
+            buscando minimizar costos o maximizar beneficios.
           </p>
         </article>
       </div>
@@ -104,9 +112,57 @@
 
     <section class="detail-section">
       <div class="section-heading">
-        <h2>Que puedes hacer en la web</h2>
+        <h2>Herramientas del editor</h2>
         <p>
-          La aplicacion esta pensada para practicar de forma visual y entender
+          Estas acciones se usan para crear ejemplos claros antes de aplicar los
+          algoritmos de grafos.
+        </p>
+      </div>
+
+      <div class="feature-list">
+        <article class="feature-item">
+          <h3>Mover</h3>
+          <p>Reposiciona nodos para ordenar visualmente el grafo en pantalla.</p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Nodo</h3>
+          <p>Crea nuevos puntos del grafo y permite identificarlos con nombres.</p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Arista</h3>
+          <p>
+            Conecta nodos y asigna pesos para representar costos, distancias,
+            tiempos o relaciones.
+          </p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Borrar</h3>
+          <p>Elimina nodos o aristas que ya no forman parte del ejercicio.</p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Exportar e importar</h3>
+          <p>
+            Guarda el trabajo en un archivo y permite volver a cargarlo para
+            continuar con la práctica.
+          </p>
+        </article>
+
+        <article class="feature-item">
+          <h3>Limpiar grafo</h3>
+          <p>Reinicia el dibujo actual para comenzar un nuevo ejemplo desde cero.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-heading">
+        <h2>Flujo recomendado</h2>
+        <p>
+          La aplicación está pensada para practicar de forma visual y entender
           mejor los resultados de cada algoritmo.
         </p>
       </div>
@@ -117,7 +173,8 @@
           <div>
             <h3>Construir el grafo</h3>
             <p>
-              Dibuja nodos y conexiones en el editor para representar tu problema.
+              Dibuja nodos y conexiones en el editor o ingresa los datos que
+              solicite el módulo seleccionado.
             </p>
           </div>
         </article>
@@ -127,8 +184,8 @@
           <div>
             <h3>Asignar pesos</h3>
             <p>
-              Define los valores en las aristas para modelar costos, tiempos o
-              distancias.
+              Define valores para modelar costos, tiempos, distancias,
+              prioridades, oferta o demanda según el problema.
             </p>
           </div>
         </article>
@@ -136,10 +193,10 @@
         <article class="workflow-step">
           <span class="step-number">3</span>
           <div>
-            <h3>Aplicar el modulo correspondiente</h3>
+            <h3>Aplicar el módulo correspondiente</h3>
             <p>
-              Usa la vista de algoritmo o asignacion segun el tipo de analisis que
-              necesites realizar.
+              Selecciona el algoritmo adecuado: rutas, árboles, transporte,
+              asignación u ordenamiento.
             </p>
           </div>
         </article>
@@ -149,7 +206,7 @@
           <div>
             <h3>Interpretar el resultado</h3>
             <p>
-              Observa la ruta, la matriz o la solucion destacada directamente sobre
+              Observa la ruta, la matriz o la solución destacada directamente sobre
               el grafo y valida tu ejercicio.
             </p>
           </div>
@@ -159,12 +216,16 @@
 
     <section class="detail-section faq">
       <div class="section-heading">
-        <h2>Recomendaciones de uso</h2>
+        <h2>Recomendaciones y solución de problemas</h2>
       </div>
 
       <ul class="tips-list">
         <li>Nombra los nodos de forma clara para identificar mejor cada proceso.</li>
-        <li>Verifica la direccion de las aristas antes de ejecutar un algoritmo.</li>
+        <li>Verifica la dirección de las aristas antes de ejecutar un algoritmo.</li>
+        <li>Usa pesos numéricos válidos; evita dejar campos vacíos.</li>
+        <li>En Dijkstra, utiliza pesos positivos para obtener resultados correctos.</li>
+        <li>En transporte, revisa que oferta y demanda estén balanceadas o ajustadas.</li>
+        <li>En asignación, confirma que la matriz represente correctamente costos o beneficios.</li>
         <li>Usa exportar para guardar ejemplos o ejercicios ya terminados.</li>
         <li>Si una matriz no se genera, revisa que el grafo tenga la estructura esperada.</li>
         <li>Organiza visualmente el grafo para que los resultados se lean con facilidad.</li>
